@@ -1,0 +1,17 @@
+.DS_Store
+auto
+*.gz
+.tmp/*
+tmp/*
+.*.swp
+*_aux
+*._aux
+*._log
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.synctex.gz
+!figs/*.pdf
