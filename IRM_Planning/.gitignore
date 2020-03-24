@@ -14,4 +14,4 @@ tmp/*
 *.out
 *.pdf
 *.synctex.gz
-!figs/*.pdf
+!figures/*.pdf

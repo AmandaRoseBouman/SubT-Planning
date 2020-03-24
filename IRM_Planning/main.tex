@@ -8,16 +8,21 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{xcolor}
+\usepackage[normalem]{ulem}
 
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{mathtools}
 
+\usepackage{tikzpagenodes}
+
+\usepackage{algorithm,algorithmic}
+
 \newcommand{\ph}[1]{{\textbf{#1}:}} % paragraph header
 \newcommand{\todo}[1]{{\color{red} #1 }} % Tasks to do
 \newcommand{\note}[1]{{\color{cyan} NOTE: #1 }}
-
+\newcommand{\hn}[1]{{\color{orange} NOTE: (Henry) #1 }}
 \newcommand{\argmax}{\mathop{\mathrm{argmax}}}
 \newcommand{\argmin}{\mathop{\mathrm{argmin}}}
 
@@ -29,63 +34,118 @@ Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in E
 
 \begin{document}
 \maketitle
-\thispagestyle{empty}
-\pagestyle{empty}
-
+% \thispagestyle{empty}
+% \pagestyle{empty}
+\pagestyle{plain}
 
 \begin{abstract}
-In this work, we propose a framework for planning under uncertainty that bridges the gap between high-fidelity continuous traversability analysis and discrete behavior planning.
+In order for robots to achieve a useful level of autonomy in novel environments, they must take into account uncertainties in localization, sensor measurements, and unknown hazards, as well as the effect of its own actions on these uncertainties.  Although there are many general methods for planning under uncertainty, we are interested in problems with very large scales, both in space (>10km$^2$) and in time (> 1 hour).  To make matters worse, we require computational efficiency and the ability to handle time constraints without severely impacting the optimality of the solution.  Towards this end we propose a unified framework for belief space planning that bridges the gap between high-fidelity information and traversability analyses and macro-level, discrete behavior planning.  We take samples of the belief space in order to construct a graph structure that encodes mission and environment-related information, which we call an Information Roadmap (IRM).  We demonstrate our framework in team CoSTAR's participation in the DARPA Subterranean Challenge, in which teams compete to autonomously search for artifacts in large, unknown, GPS-denied environments. 
 \end{abstract}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Instructions}
-\ph{Paragraph header} Please start every single paragraph with a paragraph header, summarizing the intention of that paragraph. This is mainly for iterations during the paper preparation. We will remove most of them for the final report.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Instructions}
+
+% \ph{Paragraph header} Please start every single paragraph with a paragraph header, summarizing the intention of that paragraph. This is mainly for iterations during the paper preparation. We will remove most of them for the final report.
+
+% {
+% \color{orange}
+% For the "notation consistency", please take a look at these works (note that the content might NOT be relevant, but notation could be useful)
+
+% \begin{itemize}
+% \item Feedback based IRM (for graph abstraction notation):
+% FIRM: Sampling-based Feedback Motion Planning Under Motion Uncertainty and Imperfect Measurements (IJRR 2014)
+
+% https://journals.sagepub.com/doi/10.1177/0278364913501564
+
+% \item For 3D grid mapping with "information encoding"
+% https://eric-heiden.com/publication/2019-crm-ijrr/
+
+% \item For risk-aware local planning over confidence rich maps:
+% https://eric-heiden.com/publication/2017-crm-to-iros/2017-crm-to-iros.pdf
+% \end{itemize}
+
+
+% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
-\ph{Real world example} Consider a robot tasked to explore and search a GPS-denied environment, under given time constraints. Creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements are essential elements of autonomy architecture to realize such a mission.
-... discuss uncertainty...
+\ph{High-level mission} Consider a robot tasked to explore and search a GPS-denied environment, under given time constraints. Creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements are essential elements of an autonomy architecture needed to realize such a mission.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
 
-\todo{[Amanda] Add a nice figure at the top right}
+\ph{An illustrative example} Consider the situation where a robot explores a corridor with two doorways leading to unknown areas.  The first doorway is narrow, but leads to a large, unexplored area, away from areas the robot has already explored.  The second doorway is wider and leads to what the robot can sense from a long range is a small room.  In order for the robot to make a good decision about which door to explore, it needs to take into account the uncertainty of its knowledge of each doorway, the risk involved in traversal, the time it takes to traverse, and the expected new information the robot hopes to gain in the future.  Furthermore, the robot should plan beyond the horizon of its current sensing range, and decide on the order in which to explore the doorways.  The robot will also need to update its plan at a high frequency should the situation change (e.g. due to dynamic obstacles, changing mission constraints, time limits, etc.) (see Figure \ref{fig:firstPage}).
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=.48\textwidth]{figures/firstpage_v2.png}
+  \caption{The top figure shows a portion of the course in the Urban Circuit of the DARPA Subterranean Challenge. The blue line highlights two neighboring rooms joined by a narrow passage. CoSTAR efficiently explored both rooms by planning on the IRM. The bottom figure shows the IRM shared and maintained by multiple robots (husky 1 and 4 shown).}
+  \label{fig:firstPage}
+\end{figure}
+
 
 \ph{Generic formulation}
-The above-mentioned mission in its most general form can be cast as a ...
+The above-mentioned mission in its most general form can be cast as a POMDP, where the robot's belief of both its own position and the environment are a function of the history of the robot's actions and observations.  
 
 \ph{Gap in the state-of-the-art}
-The current methods .... However, when it comes to ... 
+In general, POMDPs suffer from the curse of dimensionality and are difficult to solve.  There are many algorithms for finding solutions POMDPs with varying degrees of efficiency and accuracy, and more continue to be developed today (\cite{silver2010monte,somani2013despot,bonet1998learning,kim2019pomhdp}).  However, because in our setting we aim to tackle problems which have large time horizons (>1 hour), large spatial extents (>10km$^2$), and high dimensional belief states (including beliefs on the state of the environment), determining a solution for the robot's behavior over the full belief becomes intractable.  Therefore, we introduce several key spatial and temporal discretizations which restrict the behavior of the robot to tractable search space.  This decomposition allows us to approximately solve the optimization in Eq. (\ref{eq:MDP-belief}) in a computationally tractable manner.
+
+To obtain a tractable solution we discretize the belief space into a robot and task-relevant graph structure which reduces our search space for good policies, which we call an Information Roadmap (IRM).
 
 \ph{Contributions}
-In this work, we ...
+In this work, we develop a framework for autonomous exploration of a large, unknown environment using a multi-resolution map representation enriched with future map estimates. We evaluate the expected perceptual information gain and traversability risk on a local dense map representation. This map is then discretized to achieve a global, computationally-efficient map representation, spanning the entirety of the known environment, and enriched with the locally gathered map estimates. High level actions are planned on the global map, and then converted to low level actions on dense map.    
 
 \ph{Outline}
-In the next section, we will ...
+In the next section, we present the problem formulation. In Section \ref{sec:grid_representation}, we describe our high-resolution representation of the environment (occupancy map). Section \ref{sec:planning} focuses on how we discretize the high-resolution map to achieve a low-resolution representation (graph) and how we plan robot action sequences on both the graph and map. Section \ref{sec:hierarchical} presents concrete details about how the graph and map planners interact in a hierarchical manner for autonomous exploration of large, unknown environments. Finally, in Section \ref{sec:urban}, we describe how we implemented this hierarchical planning scheme for the Urban Circuit of the DARPA Subterranean Challenge.
 
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[width=.48\textwidth]{figures/FirstPage.png}
+%   \caption{This figure shows one of the ... (most difficutl!) farthest rooms in the course in the lower level... CoSTAR was the only team able to reach this room .... using ... via narrow passages and ...}
+%   \label{fig:firstPage}
+% \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Related Work}
+%\section{Related Work}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Problem Formulation}
+In this section, we formalize the high-level problem of time-constrained autonomous exploration and search problem.
+%for DARPA Subterranean (SubT) Challenge.
+%At a high level, the objective is to \textit{detect} and \textit{localize} the artifact objects in an unknown environment as many as possible for the given time.
+%Note that this is a highly complex problem that requires 
+We start by the most general form where the high-level formulation simultaneously captures perception (localization and mapping) and planning problems.
 
-In this section, we formulate our autonomous exploration problem for DARPA Subterranean (SubT) Challenge.
-At a high level, the objective is to \textit{detect} and \textit{localize} the artifact objects in an unknown environment as many as possible for the given time.
-Note that this is a highly complex problem that requires simultaneous perception, localization, mapping, and planning for the optimal solution.
+%\subsection{Belief State Representation}
+%In this section we briefly introduce generic POMDP formulation. For a detailed information, see e.g.,~\cite{Bertsekas05,TBF05,RN10}.
 
-\subsection{Belief State Representation}
+\ph{State}
+Let $s_k = (M, x_k)$ denote the state of the system at the $k$-th time step, comprising the static environment map $M$ and the robot pose $x_k$ at the $k$-th time step. We denote the state space by $\mathbb{S}$.
 
-In this section we briefly introduce generic POMDP formulation.
-For a detailed information, see e.g.,~\cite{Bertsekas05,TBF05,RN10}.
+\ph{Action}
+Let $a_k$ denote the activity performed by the agent at the $k$-th time step when following a policy. We denote the action space by $\mathbb{A}$.  
 
-Let $\mathbb{S}$, $\mathbb{A}$, and $\mathbb{Z}$ denote the state, action, and observation spaces, respectively.
+\ph{Observation}
+Let $z_k$ denote the observation at the $k$-th time step resulting from the agent's perceptual interaction with the environment We denote the observation space by $\mathbb{Z}$. 
+
+\ph{Transition model}
 We denote the motion model $T(s, a, s') = P(s'\,|\,s, a)$, which defines the probability of being at state $s'$ after taking an action $a$ in state $s$.
+
+\ph{Observation model}
 The observation model $Z(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. 
 
-A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step.
-Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $b(s)$ as an MDP state, also referred to as a \textit{belief state} $b \in \mathbb{B}$, where $\mathbb{B}$ is referred to as \textit{belief space}.
+\ph{Belief}
+A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step. The belief space is denoted by $b \in \mathbb{B}$, and we can divide it into belief of the static map and belief of the state:
+\begin{align}
+    b(s) = p(M,x)
+\end{align}
 
+\ph{Belief dynamics}
 Given $a_{t-1}$, $z_t$, and $b_{t-1}(s)$,
-the updated belief $b_t(s)$ can be computed by Bayesian filtering, which can be divided into two sub-steps as follows.
+the updated belief $b_t(s)$ can be computed by Bayesian filtering
+\begin{align}
+  b_t(s) &= \tau (b_{t-1}(s), a_{t-1}, z_t)
+  \label{eq:tau-belief}
+\end{align}
+Belief dynamics can be divided into two sub-steps as follows.
 \begin{align}
   b_{t-1}(s; a_{t-1}) &= \sum_{s' \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s),
   \label{eq:prediction}
@@ -96,307 +156,571 @@ the updated belief $b_t(s)$ can be computed by Bayesian filtering, which can be 
 where $\eta$ is a normalizing constant.
 % For notational convenience, let us denote $b_{t-1}(s; a) = b_{t-1}^a$ and $b_t(s; a, z) = b_t = b_{t-1}^{a z}$ hereafter.
 
-A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$.
+\ph{Policy}
+A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$, with $\pi$ in $\Pi$, the set of possible policies from which we choose $\pi$.
 
-\subsection{Global Optimization Problem}
+% \subsection{Global Optimization Problem}
 
-As briefly mentioned above, the overall objective of our problem is to detect and localize the artifact objects in an unknown environment.  We first define a belief state of the problem for the POMDP formulation:
+% As briefly mentioned above, the overall objective of our problem is to detect and localize the artifact objects in an unknown environment.  We first define a belief state of the problem for the POMDP formulation:
+% \begin{align}
+%   b \in \mathbb{B} = p(M, x),
+% \end{align}
+% where $M$ represents a map, and $x$ stands for the current robot pose.
+% Note that a Rao-Blackwellized particle filter can be used to represent $b$ by a set of sampled states drawn from $p(M, x)$ \cite{stachniss2005information}.
+
+\ph{One-step reward}
+To compute the optimal policy we rely on the one-step reward that encodes the desired behaivor of the robot. In this work, our goal is to find optimal actions to take which maximize the information gained from the environment. Informally, let $I(b, \pi(b))$ denote the information gain about the occupancy grid map states and robot localization after taking an action at $b$ under $\pi$.  We will formally define $I$ in subsequent sections.
+
+\ph{Value function}
+This objective as an optimization problem to maximize the information gain from the environment:
 \begin{align}
-  b \in \mathbb{B} = p(M, x),
+  J(b,t;\pi) &= \mathbb{E} \left[ \sum_{t'=t}^{L} I(b_{t'}; \pi(b_{t'})) \right], \label{eq:artifactopt_cost}
 \end{align}
-where $M$ represents a map, and $x$ stands for the current robot pose.
-Note that a Rao-Blackwellized particle filter can be used to represent $b$ by a set of sampled states drawn from $p(M, x)$ \cite{stachniss2005information}.
-
-Our goal is to find optimal actions to take which maximize the information gained from the environment.  Informally, let $I(b, \pi(b))$ denote the information gain about the occupancy grid map states and robot localization after taking an action at $b$ under $\pi$.  We will formally define $I$ in subsequent sections; for now we are concerned with formulating this objective as an optimization problem to maximize the information gain from the environment:
-\begin{align}
-  J(b;\pi) &= \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t I(b_t; \pi_t(b_t)) \right], \label{eq:artifactopt_cost}\\
-  \pi^*(b) & = \argmax_{\Pi} J(b;\pi), \label{eq:artifactopt}\\
-  J^*(b) &= \max_{\Pi} J(b;\pi) , \label{eq:artifactopt_value}\\
-\end{align}
-
+where $J(b,t;\pi)$ is the value function and $L$ is the total number of timesteps to optimize over.  Note that $\pi$ can be a time-varying policy, but we omit the explicit notation for convenience for now.
 % \note{Here, we do not explicitly include the localization accuracy in the objective function, unlike some of SLAM formulations. If anyone has a good idea how to describe this, please feel free to contribute.}
-
-where $J(b;\pi)$ is the value function and $J^*(b)$ is the optimal value function.  Traditionally, this problem can be solved at each timestep using a dynamic programming approach, which decomposes the maximization over an infinite number of timesteps to a maximization over one timestep at a time.  We can rewrite Eq.~(\ref{eq:artifactopt_value}) in a recursive form, which is called the optimal Bellman equation.
+ 
+\ph{Planning problem}
+Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $b(s)$ as an MDP state, also referred to as a \textit{belief state} $b \in \mathbb{B}$, where $\mathbb{B}$ is referred to as \textit{belief space}.  The overall objective is to find an optimal policy which maximizes the value function for any given belief state, from the start $t=0$:
 \begin{align}
-J^*(b) = \max_{\Pi} \left[I(b, \pi(b)) % \nonumber \\
-   + \gamma \sum_{b' \in \mathbb{B}} \tau(b, \pi(b), b') J^*(b')\right],
-  \label{eq:bellman}
+  \pi^*(b) = \arg\max_\pi J(b,0;\pi)
+  \label{eq:MDP-belief}
 \end{align}
-where $\tau(b, \pi(b), b') = \sum_{z \in \mathbb{Z}} P(b'|b,\pi(b),z) P(z|b,\pi(b))$ is the transition probability from $b$ to $b'$ under $\pi$,
-which can be derived from Eq.~(\ref{eq:prediction}) and~(\ref{eq:correction}).
-For further details, see~\cite{Ross08}.
 
-% It is often convenient to define the so-called Q-value function for an intermediate belief-action pair, $(b, a)$ or simply $b^a$, as follows.
-% \begin{align}
-%   Q(b, a; \pi) =\; & I(b, a) + \gamma \sum_{b' \in \mathbb{B}} \tau(b, a, b') J(b'; \pi).
-%   \label{eq:qfunction}
-% \end{align}
-% Then Eq.~(\ref{eq:bellman}) can be written as:
-% \begin{align}
-% J(b; \pi) =\; & \min_{a \in \mathbb{A}} Q(b, a; \pi)
-% \label{eq:minq}
-% \end{align}
+\ph{Computational challenges}
+The problem in Eq. (\ref{eq:MDP-belief}) is intractable because of 1) the high dimension of the belief $b$, particularly with respect to the belief over the map $M$, and 2) the large timescales $L$, since the complexity of the search space grows exponentially with time.  To obtain a tractable solution we discretize both the belief space $b=p(M,x)$ as well as time scale.  In Section \ref{sec:representation} we discuss discretizing the map portion of the belief $M$, and in Section \ref{sec:planning} we discuss how we discretize the policy space and timescales to obtain a tractable planning problem.
 
-However, because in our setting we aim to tackle problems which have large time horizons (>1 hour), large spatial extents (>10km$^2$), and high dimensional belief states, determining $J^*$ over the full belief $b=p(M,x)$ becomes intractable.  Therefore we introduce several key spatial and temporal decompositions which restrict the class of pol
-
-\subsection{Problem Decomposition}
-
-We introduce a three-stage decomposition of the problem to arrive at a tractable approximation of the globally optimal solution.  We decompose Eq. (\ref{eq:occupancyopt}) as follows:
-
-\begin{align}
-  \pi_{0:T}^*(b)
-  & = \argmax_{\Pi_{0:T}} \mathbb{E} \left[ \sum_{t=0}^T I^M(b_t; \pi_t(b_t)) \right]
-  \label{eq:globalopt}
-  \\
-  & \approx \sum_{t=0}^T \argmax_{\Pi_{t}} \mathbb{E} \left[ \frac{I^M(b_t; \pi_t(b_t))}{c_t^M(b_t; \pi_t(b_t))} \Delta t \right]
-  \label{eq:recedinghorizon}
-  \\
-  & \approx \sum_{t=0}^T \pi_b^{G*}(b) \Delta t.
-  \label{eq:hierarchical}
-\end{align}
-Note that we approximated Eq.~(\ref{eq:globalopt}) to Eq.~(\ref{eq:recedinghorizon}) based on receding horizon planning scheme, and Eq.~(\ref{eq:recedinghorizon}) to Eq.~(\ref{eq:hierarchical}) based on hierarchical optimization scheme. 
-\todo{[Amanda] add architecture figure}
-
-
-
-We can also define an artifact grid map $\tilde{M}$ and a corresponding belief state $\tilde{b}$ as follows.
-\begin{align}
-  \tilde{M} &= (\tilde{\mathbf{m}}^1, \tilde{\mathbf{m}}^2, \dots, \tilde{\mathbf{m}}^{N_M}), \\
-  \tilde{b} &= p(\tilde{M}, x),
-\end{align}
-where $\tilde{\mathbf{m}}^i$ is a Bernoulli random variable for the binary artifact existence state of the $i$-th cell,
-i.e., $\tilde{\mathbf{m}}^i \in \{existent, nonexistent\}$.
-\note{We can extend this notation to consider more details related to artifact detection/perception.}
-
-
-Notice that $I^A(\tilde{b}, \pi(\tilde{b}))$ in Eq.~(\ref{eq:artifactopt}) implicitly depends on the performance of the perception module, i.e., the artifact object detection module.
-In this work, we assume that the artifact object detection works perfectly, and decouple perception from our optimization framework.
-In other words, we assume all artifact objects will be detected if the occupancy grid map has been fully covered.
-\note{We can further incorporate artifact detection in our framework to some extent.}
-
-Then, we can rewrite the optimization problem as follows.
-\begin{align}
-  \pi_{0:T}^*(b) & = \argmax_{\Pi_{0:T}} \mathbb{E} \left[ \sum_{t=0}^T I^M(b_t; \pi_t(b_t)) \right],
-  \label{eq:occupancyopt}
-\end{align}
-where $I^M(b, \pi(b))$ is the information gain about the occupancy grid map states and robot localization after taking an action at $b$ under $\pi$.
-
+%\todo{transition to adding map, belief, information definitions}
+%\todo{add nice gentle figure which describes general approach (no math)}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Proposed Framework}
+\section{Grid-based Belief Mapping} \label{sec:grid_representation}
 
-In this section, we propose a \emph{receding-horizon hierarchical optimization} framework to tackle our simultaneous localization, mapping, and planning problem.
-We first introduce Information Roadmap (IRM) which is a sparse graph that encodes the connectivity of the free space in the environment and other abstract information such as node-to-node traversability.
-Then we describe the receding-horizon hierarchical optimization framework for autonomous exploration in large unknown environments.
-
-
-\subsection{Information Roadmap (IRM)}
-
-\todo{TODO}
-\todo{[Amanda] Add a nice IRM figure}
-
-
-\subsection{Receding-horizon Hierarchical Optimization}
-
-We employ two strategies to solve our optimization problem; receding-horizon planning and hierarchical optimization.
+We discretize the belief of the map $M$ into $N_M$ grid cells, by constructing a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of the map.  For example, the cell can capture belief about occupancy, risk of traversal, or the likelihood it contains an artifact or object of interest.  Occupancy grid maps have been well studied for some time \cite{moravec1985high,elfes1990stochastic}.
 %
-Due to the curse of history in POMDPs, the problem complexity increases exponentially with the planning horizon \cite{Pineau03}.
-Receding-horizon planning is a common scheme to tackle such a challenge by interleaving execution and replanning for a finite horizon.
+Formally, an we define the grid map as composed of grid cells:
+\begin{align}
+  M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
+\end{align}
+where $\mathbf{m}^i$ is a random variable for the state of the $i$-th cell,
+i.e., $\mathbf{m}^i \in \mathbb{M}$, and
+$N_M$ is the total number of grid cells in the map.
+In the case of an occupancy grid map, $\mathbf{m}^i$ is a Bernoulli random variable with $\mathbb{M} = \{free, occupied\}$.  More generally, $\mathbb{M}$ can be the cross space of multiple boolean and real variables which represent different attributes.  For example, $\mathbb{M} = \{free, occupied\}\times\{artifact, no\, artifact\}\times [0,1] (risk)$.
+The value of $\mathbf{m}^i$ is often assumed to be static over time.
+
+\ph{Map belief} The goal of belief grid mapping is to compute the posterior probability of the state of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
+\begin{align}
+  p(M | z_{1:t}, x_{1:t}).
+\end{align}
+Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$.
+So, it is often to assume the belief grid map to be a Markov random field of order 0 in which the belief probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
+With the cell independence assumption, $p(M | z_{1:t}, x_{1:t})$ can be determined from the individual cell state probability, $p(\mathbf{m}^i | z_{1:t}, x_{1:t})$.
+
+\ph{Recursive Map belief evolution} Given a sensor model $p(z | \mathbf{m}^i, x)$, this probability can be computed recursively as follows.
+\begin{align}
+  p(\mathbf{m}^i | z_{1:t}, x_{1:t}) =
+  \frac{p(z_t | \mathbf{m}^i, x_{t}) p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1})}
+       {\sum_{\forall j} p(z_t | \mathbf{m}^j, x_{t}) p(\mathbf{m}^j | z_{1:t-1}, x_{1:t-1})}.
+\end{align}
+Note that the sensor model $p(z | \mathbf{m}^i, x)$ can be quite complex as it should consider all possible grid configurations.
+Thus, it is often handled by maximum likelihood estimation or Rao-Blackwellized particle filtering methods \cite{burgard2005coordinated,stachniss2005information}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{One-step Information Gain}
+Entropy can be used as a measure for the uncertainty of random variables.
+The entropy $H_p(x)$ of a probability distribution $p$ is the expected information, defined as $\mathbb{E}_p[-\log p(x)]$ \cite{cover2012elements}.
+For example, the entropy of an occupancy grid cell with binary occupancy can be written as, for the $i$-th cell:
+\begin{align}
+  H_p(\mathbf{m}^i) = -p_o \log_2 p_{o} - p_f \log_2 p_f,
+\end{align}
+where $p_o = p(\mathbf{m}^i = occupied)$ and $p_f = p(\mathbf{m}^i = free) = 1 - p_o$.
+If a grid cell is unknown for its occupancy with the initial prior of $p_o = p_f = 0.5$, $H_p(\mathbf{m}^i) = 1$, and if it is fully known to be either occupied or free, $H_{p}(\mathbf{m}^i) = 0$.
 %
-Hierarchical optimization is also a useful methodology to solve large-scale problems in accordance with the divide-and-conquer paradigm.
-\todo{TODO: add references for each.}
 
-Our proposed framework is composed of receding-horizon planners in three hierarchical levels--graph, map, and traversability levels.
-Graph-level planning is conducted on the IRM, using the embedded information in its nodes and edges.
-Map-level planning uses a local occupancy grid map (20m$\times$20m) that is centered at the current robot pose.
-Traversability-level planning uses a smaller local occupancy grid map (5m$\times$5m) and the corresponding point cloud sensor data for the robot-specific traversability analysis.
-In order to ensure the robots continue autonomous exploration over time, we additionally impose a constraint regarding the risk level on each optimization problem.
-
-
-\subsubsection{Graph-level Receding-horizon Planning}
-
+Under the cell independence assumption, the total entropy of the map $M$ is
 \begin{align}
-  \pi_t^{G*}(b) &= \argmax_{\Pi_t^G} \mathbb{E} \left[ \frac{I^G(b; \pi_t^G(b))}{c_t^G(b; \pi_t^G(b))} \right]
-  \nonumber \\
-  s.t.~&~\rho_t^G(b; \pi_t^G(b))< \psi^G(t).
-  \label{eq:graphopt}
+  H_p(M) = \textstyle \sum_{i = 1}^N H_{p}(\mathbf{m}^i).
 \end{align}
-where $I^G(b; \pi_t^G(b))$ is the information gain in the graph level,
-$c_t^G(b; \pi_t^G(b))$ is a cost function that returns a time to execute an action under $\pi_t^G$.
-$\rho_t^G(b; \pi_t^G(b))$ is a risk measure for taking an action at $b$ under $\pi_t^G$, and
-$\psi^G(t)$ is a time-varying threshold for allowable risk at time $t$.
-(For example, $\psi^G(t)$ gets higher as $t$ gets closer to $T$, the total allowed time for exploration, in order to allow riskier actions.)
 
-We define the graph-level policy as follows.
+Now we can introduce information gain $I^i$ obtained from a new observation $z_t$ and its corresponding robot pose $x_t$~\cite{cover2012elements}.
 \begin{align}
-  \pi_t^G(b) = 
-  \begin{dcases*}
-    \pi_t^{M*}(b; F^d) & if $b \in \mathbb{N}(F^d)$ \\
-    a_t^G(b; F^d) & otherwise 
-  \end{dcases*},
+  I^i(\mathbf{m}^i, z_t, x_t) = H_p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1}) - H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}).
 \end{align}
-where $F^d$ is the desired frontier cluster (\todo{TODO: need more explanation}\!\!) based on $\pi_t^G$, and
-$\mathbb{N}(F^d)$ stands for the neighborhood belief states of $F^d$.
-$\pi_t^{M*}(b; F^d)$ is an optimal policy in the map level for $b$ given $F^d$, and
-$a_t^G(b; F^d)$ is an abstract graph-level action to reach $F^d$ following the shortest path IRM edges.
-\note{We may add another low-level optimization that solves for the concrete robot trajectory $x_{0:k}$ for the given $a_t^G$, which is effectively the mobility service in our implementation.}
-
-
-\subsubsection{Map-level Receding-horizon Planning}
-
+Similarly, we can compute the \textit{expected} information gain for an action $a_t \in \mathbb{A}$ in the planning phase, by averaging over all possible observations.
 \begin{align}
-  \pi_t^{M*}(b; F^d) &= \argmax_{\Pi_t^M} \mathbb{E} \left[ \frac{I^M(b; \pi_t^M(b; F^d))}{c_t^M(b; \pi_t^M(b; F^d))} \right]
+  &\hat{I}^i(\mathbf{m}^i; a_t)
+  = \mathbb{E}_{z_{t+1}, x_{t+1}} [ I^i (\mathbf{m}^i, z_{t+1}, x_{t+1}; a_t) ] \nonumber \\
+  &\!\!= H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}) - \mathbb{E}_{z_{t+1}, x_{t+1}} [ H_p (\mathbf{m}^i | z_{1:t+1}, x_{1:t+1}) ].
+\end{align}
+
+The total information gain from a scanning sensor can be computed from local updates as follows
+\cite{bourgault2002information}.
+\begin{align}
+  I(M, z_t, x_t) = \sum_{i \in S_t} I^i(\mathbf{m}^i, z_t, x_t),
+  \label{eq:infogain}
+\end{align}
+where $S_t$ is a set of indices of the grid cells within the region of sensor coverage at time $t$, which would depend on $x_t$.
+
+% We can also define an artifact grid map $\tilde{M}$ and a corresponding belief state $\tilde{b}$ as follows.
+% \begin{align}
+%   \tilde{M} &= (\tilde{\mathbf{m}}^1, \tilde{\mathbf{m}}^2, \dots, \tilde{\mathbf{m}}^{N_M}), \\
+%   \tilde{b} &= p(\tilde{M}, x),
+% \end{align}
+% where $\tilde{\mathbf{m}}^i$ is a Bernoulli random variable for the binary artifact existence state of the $i$-th cell,
+% i.e., $\tilde{\mathbf{m}}^i \in \{existent, nonexistent\}$.
+% \note{We can extend this notation to consider more details related to artifact detection/perception.}
+
+
+% Notice that $I^A(\tilde{b}, \pi(\tilde{b}))$ in Eq.~(\ref{eq:artifactopt}) implicitly depends on the performance of the perception module, i.e., the artifact object detection module.
+% In this work, we assume that the artifact object detection works perfectly, and decouple perception from our optimization framework.
+% In other words, we assume all artifact objects will be detected if the occupancy grid map has been fully covered.
+% \note{We can further incorporate artifact detection in our framework to some extent.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Planner architecture}
+\section{Information Roadmap Planning}\label{sec:planning}
+To convert the Equation (\ref{eq:MDP-belief}) to a computationally tractable planning problem, we sample the robot pose space and reduce it to a representative graph. 
+
+%\section{Hierarchical Information-based Planner (HIP) Framework}
+%\section{Hierarchical Information-based Planning Framework for Large-scale Exploration}
+
+\subsection{Policy space reduction}
+% \begin{figure*}[ht!]
+%   \centering
+%   \includegraphics[width=.9\textwidth]{figures/structure.png}
+%   \label{fig:architecture}
+% \end{figure*}
+
+% \begin{figure*}[ht!]
+% %   \centering
+%   \includegraphics[width=.48\textwidth]{figures/structure_v2.png}
+%   \label{fig:architecture}
+% \end{figure*}
+
+\ph{Graph Definition}
+We employ a sparse graph structure $G = (V, E)$ captures the connectivity of the free space in the environment.  We refer to this graph as the IRM (information roadmap) as its nodes ($V$) and edges ($E$) are enriched by various environmental and robot-related properties.  In general, we consider a graph of sampled beliefs, i.e. where $V=\{v|v\in\mathbb{B}\}$ and edges $E$ are a set of actions and measurements the robot can take to transition between two belief nodes. Constructing a graph which densely samples the full beliefs space suffers from the curse of dimensionality and may be intractable.  Instead, we incrementally sample the belief space \textit{locally}.  We grow the IRM graph as the robot explores, creating new nodes, both leaf nodes and internal nodes.  We distinguish between two types of nodes:  breadcrumb nodes and frontier nodes.  Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversible space where the robot has explored already, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$ (See Figure \ref{fig:irm_large}).
+
+\ph{Belief graph notation}
+For ease of notation we make the following definitions.  For a given node $v_i$ with belief $b_i = p(M,x)$, we say the node is \textit{centered at} a location $x^i\in\mathbb{X}$ when $p(d(x,x^i)>r_x)<\epsilon$, for some distance metric $d(\cdot,\cdot)$, \textit{breadcrumb radius} $r_x>0$, and probability threshold $\epsilon\in(0,1]$.  Similarly, we consider a robot with belief $b_t$ to be \textit{at} a node $v_i$ when $p(d(x,x^i)>r_x)<\epsilon$.  Finally, we assume that the IRM contains the latest belief of the map $M_t$ at each node, i.e. $v_i=p(M_t,x^i)\forall t$.  We can therefore use the notation $v_i$ to denote the location the node is centered at $x^i$, since we assume the map belief at each node is the most recent belief.
+
+\begin{figure}[ht!]
+  \includegraphics[width=.48\textwidth]{figures/irm.png}
+  \label{fig:irm_large}
+  \caption{Information Roadmap consisting of breadcrumbs and frontiers for belief-space planning over large environments and timescales.}
+\end{figure}
+
+\begin{figure}[ht!]
+  \includegraphics[width=.48\textwidth]{figures/irm_breadcrumbs_frontiers.png}
+  \label{fig:breadcrumbs_frontiers}
+  \caption{Breadcrumbs (black dots) denote explored regions and help to define to connectivity of free space.  The yellow circle denotes the sensing range.  Yellow dots are new frontier nodes, which encode locations of high potential for information gain.  This potential can be evaluated through rollouts of simulated additional frontier nodes (dotted circles).  In this work we employ an information gain heuristic to approximate these rollouts, as a function of uniquely unexplored territory (area between dashed green lines).}
+\end{figure}
+
+\ph{Breadcrumb nodes}
+% We refer to leaf nodes as frontiers $f\in F\subset V$ and internal nodes as breadcrumbs $b\in B \subset V$ with $F\cup B = V$.  New internal nodes capture the connectivity of free space to allow for efficient future traversal. 
+Breadcrumb nodes $b\in B \subset V$ are nodes centered at locations where \textit{no changes to the map belief will occur}.  This means that we consider breadcrumb nodes to be locations where the map is fully explored.  Note that this does not require the exact location to have been visited before.  (See Figure \ref{fig:breadcrumbs_frontiers}). 
+
+\ph{Frontier nodes (1-step lookahead)}
+We define a frontier node $f\in F\subset V$ as a node centered at a location where we expect to see changes to the map belief.  We can generate these frontiers by applying a look-ahead policy (a rollout).  This rollout simulates how the graph will grow by taking multiple actions into the future, and can be constructed using simulations derived from models of the environment, heuristics, etc.  For the frontier $f$ with planning depths $k$, we can write the belief of the frontier to be $b_{f,k} = p(M_k, x_k = x_f)$.
+
+\ph{Frontiers can encode a k-step lookahead}
+In this work, we because we assume that we have limited sensing range in a completely unknown environment, we add frontiers to the graph with a one-step look-ahead only.  By adding frontiers on the boundary of known vs. unknown space, we avoid adding large numbers of spurious nodes which could be located inside obstacles, walls, etc.  However, to account for higher planning depths and avoid myopic behavior, we treat each one-step lookahead frontier as a representative of an entire isolated lookahead  subtree which extends from the frontier, and which excludes the branch coming back to IRM breadcrumb node.  In doing so, we assume the robot may move to a frontier, grow a subtree of new nodes and explore them, then return to the original frontier.  We encode in the frontier the expected change to the belief from exploring the whole subtree as a bonus to the expected information gain, as will be shown later.
+
+% \note{(Sung) I suggest we define `frontier nodes' as `virtual/simulated nodes from one-step look-ahead (rollout)', which would be more coherent to the original meaning. The breadcrumb nodes with connected frontier nodes are the original leaf nodes, but we expand our graph by one-step look-ahead at every leaf node, and we solve for the graph policy on the expanded graph (where the frontier nodes are now the leaf nodes).}
+% \hn{Frontier nodes is better, since it keeps the discussion generic. Technically, the current method herein is not 'virtual/simulated nodes from one-step look-ahead (rollout)'... Since your past papers didn't care about ignoring entire processes for 'generative models', why not remove rollout and just call it 'generative model'?}
+% \note{(Sung) Actually I meant two things at the same time here, and was not that clear.
+% But beforehand, we need to clearly distinguish $v \in V$ and $b = p(M, x) \in \mathbb{B}$, where $x \in V$ on the IRM approximately, in this dicussion as well as in the whole text.
+% Now what I meant to say:
+% i) Frontier node pose $x_f \in \mathbb{X}$ is generated from one-step look-ahead (from ray casting, a generative model, or whatsoever), and
+% ii) a frontier belief node $b_{f,k} = p(M_k, x_k = x_f)$ on the belief tree at planning depth $k$ is a representative of the whole subtree excluding the branch coming back to IRM breadcrumb node.
+% It is for the abstraction that can leave our framework generic without opting for a specific approach (heuristic, generative model, deep learning, etc.).
+% @Henry: I would like a further discussion about the capability of estimating $J(b_{f,k})$ for given parameters such as a planning depth into the subtree and a flag to return to the original pose $x_f$ at the end of the subtree.}
+
+
+%We first introduce Information Roadmap (IRM) which is a sparse graph that encodes the connectivity of the free space in the environment and other abstract information such as node-to-node traversability.
+
+%\subsection{Information Roadmap (IRM)}
+
+% \begin{align}
+%     u = \pi(b) = \pi^{traversability} (\pi^{EntropyMaximizer} ( \pi^{graph} (b) ) )
+% \end{align}
+
+% \begin{align}
+%     u = \pi(b) = \pi^{T} (\pi^{M} ( \pi^{G} (b) ) )
+% \end{align}
+%\todo{Do we want to define multiple edges between nodes?}
+
+
+% \subsubsection{IRM construction/update}
+
+% \ph{Breadcrumb node generation} Breadcrumbs are generated...
+
+% \ph{Breadcrumb node wiring}
+
+% \ph{IRM update at loop closure}
+% Automatic IRM edge updates on loop closure ensures that the IRM topology matches with the underlying pose graph after a loop closure has occurred.
+
+% \begin{figure}[ht!]
+%   \includegraphics[width=.48\textwidth]{example-image}
+%   \centering
+%   \caption{IRM}
+%   \label{fig:irm}
+% \end{figure}
+
+
+% \subsubsection{Frontier detection/pruning}
+
+% Frontier nodes on the IRM are generated and deleted by a repeated process while the robots are exploring.
+
+\ph{Frontier detection}
+\begin{enumerate}
+\item Frontier cell detection: 
+Frontier cell detection is based on Fast Frontier Detection algorithm \cite{keidar2012robot} (see Fig.~\ref{fig:frontiering}).
+From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green) that connect all the end-points in a sequential order.
+Then we detect frontier cells (green) that are adjacent to unknown cells.
+\item Frontier node sampling: 
+A frontier node sampled from the detected frontier cells (pink square) as an approximation of the frontier cells.
+We determine the frontier node position by computing the centroid of the frontier cells.
+If the centroid is not known free space, we project it to the nearest frontier cell as an alternative. 
+\item Frontier node filtering: 
+In order to prevent having duplicate frontier nodes on the IRM, we filter out newly frontiers if they are closer to existing frontier nodes than a threshold.
+Additionally, we exclude new frontier nodes if they are near to the pose graph nodes that are generated by other robots.
+This is to ensure that new frontiers are not generated where any other robots have explored already.
+\item Registration of frontier nodes: 
+Finally, we add the new frontiers to the IRM.
+They are connected to the breadcrumb that is closest to the current robot position to encode the visibility for the frontier nodes on the IRM.
+We save the relative position to the underlying pose graph node, so that we can keep the same topological structure after loop closure events.
+\end{enumerate}
+
+\ph{Frontier pruning}
+\begin{enumerate}
+\item Frontier cell pruning: 
+We run raycasting from the current robot pose and update the occupancy state of the local occupancy grid map.
+If a frontier cell is no longer adjacent to unknown cells, we prune the frontier cell.
+\item Removal of frontier nodes: 
+After pruning all frontier cells on the local occupancy grid map, we check if any frontier node have only a few remaining frontier cells associated with it.
+If it is so, we prune the frontier node from the IRM. 
+\end{enumerate}
+
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[trim={7cm 9cm 10cm 5cm},clip,width=.48\textwidth]{figures/frontier_detection.png}
+  \caption{Illustration of frontier detection process.
+    From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green), and detect frontier cells (green) that are adjacent to unknown cells. Then, we sample frontier nodes (pink squares) from the frontier cells.}
+  \label{fig:frontiering}
+\end{figure}
+
+
+\ph{Graph policy}
+We define the graph-level policy $\pi^g \in \Pi^g$ as a function that returns a controller-specific parameter vector $\theta\in\Theta\subseteq\mathbb{R}^{n_\theta}$ given the current node $v \in V$.
+\begin{align}
+    \pi^g(v): V\rightarrow \Theta
+\end{align}
+For example, $\theta$ could represent the location of the next node to reach, specific gains for an LQR controller, weights of a neural network, etc.
+
+\ph{Map policy}
+We define the map-level policy $\pi^M \in \Pi^M$ as a function that uses a controller-specific parameter vector $\theta\in\Theta\subseteq\mathbb{R}^{n_\theta}$ given the current belief $b$, and returns a local action.
+\begin{align}
+    \pi^M(b;\theta): \mathbb{B}\times\Theta\rightarrow \mathbb{A}
+    % \pi^M: b(s)\rightarrow a
+\end{align}
+% \note{$\pi^M(b ; v) = RHC(b; v,m)~~OR~~ LQG(b; v,m)$}
+
+\ph{Overall policy}
+We define an overall policy $\pi \in \Pi$ generated by combining the graph-level policy $\pi^g$ and the map-level policy $\pi^M$.
+\begin{align}
+    \pi(b;v):\mathbb{B}\times V\rightarrow \mathbb{A}
+\end{align}
+Given the current node, the graph-level policy chooses the next local controller, and the map-level policy generates the corresponding local control signal at belief $b(s)$. This overall policy is stated as follows:
+\begin{align}
+    \pi(b;v) = \pi^M(b; \pi^g(v))
+\end{align}
+
+At the graph-level, we assume that $\pi^M$ is fixed and thus only optimize over $\pi^g$, which implies optimizing at the node-to-node level. However later we will show how we optimize over $\pi^M$ as well.
+
+\subsection{Graph-Level Planning}
+
+\ph{Graph edge transition}
+Given a graph-level policy $\pi^{g}(v_i)$, control signals generated by the map-level policy will induce a  transition from nodes $v_i$ to $v_j$ with some probability:
+\begin{align}
+    T^{g} (v_i, \pi^g(v_i), v_j) = \prod_{t}^{t+\tau} T(x_t,\pi(b_t;v_i),x_{t+1})
+\end{align}
+where $\tau\in\mathbb{N}$ is the number of timesteps the policy $\pi^M(b;\pi^g(v_i))$ is executed for, and where we assume that $x_{t+\tau}$ is at the goal node $v_j$.  Note that $\tau$ may vary depending on $v_i$ and $\pi(\cdot;v_i)$.
+
+\ph{Graph edge information reward}
+We define the graph action information reward $I^g(v, \pi^M): V \times \Pi^M \to \mathbb{R}$ as the amount of information gain when moving from a node $v_i$ under a policy $\pi^M$.
+\begin{align}
+    I^g(v_i,\pi^M) = \mathbb{E}_{\pi^M(\pi^g(v_i))}\left[\sum_{t}^{t+\tau}  I(b_t,a_t)+\hat{I}^{g}(v_j)\right]
+    \label{eq:graph_action_info_reward}
+\end{align}
+
+where $\hat{I}^{g}(v_j)$ is the graph expansion reward, defined as follows:
+
+\ph{Graph expansion reward for frontier nodes}
+The graph expansion information reward associated with a frontier node $v_j \in F$ encodes the value of expanding the IRM by the addition of frontier child nodes. We denote the expected value of a frontier node by $\hat{I}^{g}(v_j)$.
+
+There are several ways to compute $\hat{I}^{g}(v_j)$, $\forall v_j \in F$:
+i) based on the collected information so far (e.g., the frontier cell segment size),
+ii) based on the domain knowledge or heuristic estimation, or
+iii) via Monte Carlo simulations (i.e., rollouts) beyond the leaf nodes based on the prior or learned models.
+Note that for unknown complex environments, it is hard to construct reliable prior or learned models for the third approach.
+
+\ph{Graph edge reward}
+We define the graph reward as the reward gained by executing the graph-level policy $\pi^g$ from node $v$ as a function $R^g(v, \pi^g): V \times \Pi^g \to \mathbb{R}$.  For example, the reward could be a function of information gain, risk, or time of travel:
+\begin{multline}
+    R^g(v, \pi^g(v)) = f(I^g(v,\pi^M(\pi^g(v))),\\
+    \rho(v,\pi^M(\cdot,\pi^g(v))),\tau(v,\pi^M(\cdot,\pi^g(v)))
+\end{multline}
+where $\rho$ and $\tau$ are possible functions to encode information about risk and time taken along the trajectory, and $f$ combines the information to produce a reward value.
+
+\ph{Planning horizon on the graph}
+Recall the total time horizon for the problem in Eq. (\ref{eq:artifactopt_cost}) is $L$.  We wish to discretize this into $K$ larger chunks of time on the graph.  For example, if we assume a fixed time to traverse between any two nodes of $\tau$, then $K$ can be the number of transitions to optimize over on the graph: $K=ceil(L/\tau)$.  When $\tau$ varies depending on the node and policy, then we may approximate $K$ with some heuristic.
+
+\ph{Time-varying graph policy}
+Up to this point we have omitted the time dependence of the policy $\pi^g(v)$ from the notation, however because we wish to solve a finite horizon problem, the policy needs to be time-varying.  With a slight abuse of notation, let $k=0,\cdots,K$ indicate the graph-level timesteps, and we write our time-varying graph policy as $\pi^g_k(v)$. 
+
+\ph{Graph value function}
+Next we define the graph value function $J^g(v,k;\pi^g_{k:K})$ as the sum of future expected rewards on the graph for a graph-level policy $\pi^g$ as:
+\begin{align}
+    % U^g(b) = f(I^E, c(b, \pi^g)) \\
+    J^g(v_i,k;\pi^g_{k:K}) &= \mathbb{E}_{\nu_{k'}\sim T^g,\, \nu_k=v_i} \left[ \sum_{k'=k}^K R^g(\nu_{k'}, \pi^g_{k'}(\nu_{k'})) \right]
+    \label{eq:graphvaluefn}
+\end{align}
+
+\ph{Graph-level optimization problem}
+We wish to find the optimal graph level policy $\pi^g_{k:K}$ over timesteps $k$ to $K$ in a receding horizon manner that maximizes the value function over the space of possible policies $\Pi^g_{k:K}$:
+\begin{equation}
+    \pi^{g*}_{k:K}(v)=\max_{\Pi^g_{k:K}} J^g(v,k;\pi^g_{k:K}).
+    \label{eq:graphoptprob}
+\end{equation}
+
+
+% \begin{equation}
+%     J^{g*}(v_i,\pi^g_{i:\infty})=\max_{\Pi^g_{i:\infty}} J^g(v_i;\pi^g(v_i)).
+%     \label{eq:graphoptprob}
+% \end{equation}
+
+% The Bellman equation is used to find the optimal graph-level policy $\pi^g$ that maximizes the value function over the space of possible policies $\Pi^g$:
+% \begin{align}
+% \pi^{g*}(v_i)
+%     &= \argmax_{\Pi_{0:\infty}^g} \Big[R^g(v_i, \pi^g(v_i)) \nonumber \\
+%     &\quad\quad + \sum_{v_j \in V} T^g(v_i, \pi^g(v_i),v_j) J^{g*}(v_j) \Big]
+%     %\\ &s.t.~~J^{g*}(v_j) = \hat{J}^{g*}(v_j),~~\forall~ v_j \in F \nonumber
+%   \label{eq:bellman_opt_approx}
+% \end{align}
+
+% \noindent where $\hat{J}^{g}(v_j)$ is the expected graph value for frontier nodes, as detailed below. 
+
+
+\ph{Graph planner - Belief Tree Search}
+Now we describe how we can solve Eq.~(\ref{eq:graphoptprob}).
+Since $J^g(v_i,k; \pi^g)$ depends on the \textit{sequence} of actions as defined in Eq.~(\ref{eq:graphvaluefn}), we cannot use a simple value iteration on the IRM (as in the MDP setting), which accepts the Bellman update in any arbitrary order.
+Instead, we need to construct a tree structure, called a \textit{belief tree}, rooted at the current given node $v_i$ at timestep $k$, and growing until reaching a leaf node or the finite horizon.
+% \note{When thinking of probabilistic occupancy state estimation (i.e., we may not get rid of occupancy state uncertainty by a single visit), then we may end up having an infinite-horizon belief tree. So, we should not say we can solve for infinite horizons even with i) or ii) scheme.}
+%
+This tree structure will unroll the graph with possible loops, and encodes the dependency on the history
+(e.g., revisiting a leaf node multiple times will not provide a multiple of the leaf node's original information gain, see Figure \ref{fig:search_tree}).
+
+% \begin{figure}[ht!]
+%   \includegraphics[width=.48\textwidth]{figures/search_tree.png}
+%   \caption{Because the expected information gain will change after taking an action, we must construct a decision tree with time dependencies.}
+%   \label{fig:search_tree}
+% \end{figure}
+
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=.7\columnwidth]{figures/bts_example/bts_irm.png}
+  \caption{Toy example: IRM}
+  \label{fig:bts_irm}
+\end{figure}
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map0.png}
+  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map1.png}
+  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map2.png}
+  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map3.png}
+  \caption{Toy example: Occupancy grid maps}
+  \label{fig:bts_maps}
+\end{figure}
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=.5\columnwidth]{figures/bts_example/bts_example.png}
+  \caption{Toy example: Belief tree search}
+  \label{fig:bts_example}
+\end{figure}
+
+
+\ph{Algorithm description:}
+In order to solve Eq.~(\ref{eq:graphoptprob}), we need a belief tree search algorithm.
+At a high level, we need to i) construct a belief tree that contains all the reachable nodes from the root node, and ii) update the expected value for each node by value backpropagation from the leaf nodes.
+iii) Once the expected value for each action for each node converges after enough iterations of i) and ii), we return the best action for each node that maximizes the expected value.
+% \todo{We can add a pseudo-code algorithm.\!\!}
+
+\ph{Remark} We can improve the efficiency of this process in various ways \cite{silver2010monte,somani2013despot,bonet1998learning,kim2019pomhdp}.
+For example, we interleave the belief tree construction and belief tree search, so that we first focus on the subset of the tree that is likely to be included in the optimal policy tree. As for the planning horizon, we can use a fixed (discounted) horizon if $K$ is too large, but it can be useful to incorporate a variable finite horizon that can scale over different sizes and structures of the IRM.
+
+% \ph{Graph planner}
+
+% \begin{itemize}
+% \item \ph{Expected value for open-ended leaf nodes}
+% % \item \ph{Graph expansion information reward}
+% With incomplete exploration of the environment, the IRM is also incomplete---there are open-ended leaf nodes (i.e., frontier nodes) whose successor nodes are expected to exist but not yet created. \todo{Needs better wording here.\!\!}
+% We denote the expected value of an open-ended leaf node $v_j \in F$ by $\hat{J}^{g}(v_j)$.
+
+% There are several ways to compute $\hat{J}^{g}(v_j)$, $\forall v_j \in F$;
+% i) based on the collected information so far (e.g., the frontier cell segment size),
+% ii) based on the domain knowledge or heuristic estimation, or
+% iii) via Monte Carlo simulations (i.e., rollouts) beyond the leaf nodes based on the prior or learned models.
+% Note that for unknown complex environments, it is hard to construct reliable prior or learned models for the third approach.
+
+% % We notate the expected value of an open-ended leaf node $v_j$ as:
+% % \begin{align}
+% %     % I^G(v_i,v_j) = \sum_{s\in e_{ij}} I(s,\pi^M(s)) \\
+% %     I^V(v_j) = I^{future}(v_j)
+% % \end{align}
+% % where $I^{future}(v_j)$ is the expected future information gain which results from the ability to add new nodes to the graph after executing a policy $\pi^g(v_j)$.
+
+% \item \ph{Belief tree search algorithm}
+
+% \emph{Reason for belief tree search:}
+% Now we describe how we can solve Eq.~(\ref{eq:graphoptprob}).
+% Since $J^g(v_i, \pi^g)$ depends on the \textit{sequence} of actions as defined in Eq.~(\ref{eq:graphvaluefn}), we cannot use a simple value iteration on the IRM (as in the MDP setting), which allows the Bellman update in any arbitrary order.
+% Instead, we need to construct a tree structure, called a \textit{belief tree}, rooted at the current given node $v_i$ at $k=0$, and growing until reaching a leaf node or the finite horizon.
+% % \note{When thinking of probabilistic occupancy state estimation (i.e., we may not get rid of occupancy state uncertainty by a single visit), then we may end up having an infinite-horizon belief tree. So, we should not say we can solve for infinite horizons even with i) or ii) scheme.}
+% %
+% This tree structure will unroll the graph with possible loops, and encodes the dependency on the history
+% (e.g., revisiting a leaf node multiple times will not provide a multiple of the leaf node's original information gain).
+
+% \emph{Algorithm description:}
+% In order to solve Eq.~(\ref{eq:graphoptprob}), we need a belief tree search algorithm.
+% Basically, we need to i) construct a belief tree that contains all the reachable nodes from the root node, and ii) update the expected value for each node by value backpropagation from the leaf nodes.
+% \todo{We can add a pseudo-code algorithm.\!\!}
+
+% We can improve the efficiency of this process in various ways \cite{silver2010monte,somani2013despot,kurniawati-isrr13}.
+% For example, we interleave the belief tree construction and belief tree search, so that we first focus on the subset of the tree that is likely to be included in the optimal policy tree.
+
+% As for the planning horizon, we can use a fixed (discounted) horizon, but it can be useful to incorporate a variable finite horizon that can scale over different sizes and structures of the IRM.
+
+% \end{itemize}
+
+% At each step, we can solve the simple one-step optimization via the Bellman equation:
+% \begin{align}
+% \pi^{G*}(v_i)
+%     &= \argmax_{\Pi_{0:\infty}^g} \Big[U^g(v_i, \pi^G(v_i)) \nonumber \\
+%     &\quad\quad + \sum_{v_j \in V} T^g(v_i, \pi^G(v_i),v_j) J^{g*}(v_j) \Big] \\
+%     &s.t.~~J^{g*}(v_j) = I^V(v_j),~~\forall~ v_j \in F
+%   \label{eq:bellman_opt_approx}
+% \end{align}
+
+% Every frontier is an attractor, and serves as the root of a tree. Given that there's multiple frontiers in a graph, the IRM is a forest that changes with every iteration....
+
+
+% \ph{Computational tractability}
+% Because we have a finite graph with sparse connectivity, finding an optimal cost-to-go $J^{G*}(v_j)$ is much easier than maximizing Eq. (\ref{eq:artifactopt_cost}) and can be efficiently computed via Breadth First Search.
+
+
+% \todo{
+% \begin{enumerate}
+%     \item need some node cost or cost of traversal?  time to travel?
+% \end{enumerate}
+% }
+
+% New frontier nodes capture the boundary between explored and unexplored regions and allow for efficient exploration action selection.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subsection{Unorganized Stuff for now}
+
+% \begin{align}
+%   \pi_{0:T}^*(b)
+%   & = \argmax_{\Pi_{0:T}} \mathbb{E} \left[ \sum_{t=0}^T I^M(b_t; \pi_t(b_t)) \right]
+%   \label{eq:globalopt}
+%   \\
+%   & \approx \sum_{t=0}^T \argmax_{\Pi_{t}} \mathbb{E} \left[ \frac{I^M(b_t; \pi_t(b_t))}{c_t^M(b_t; \pi_t(b_t))} \Delta t \right]
+%   \label{eq:recedinghorizon}
+%   \\
+%   & \approx \sum_{t=0}^T \pi_b^{G*}(b) \Delta t.
+%   \label{eq:hierarchical}
+% \end{align}
+% Note that we approximated Eq.~(\ref{eq:globalopt}) to Eq.~(\ref{eq:recedinghorizon}) based on receding horizon planning scheme, and Eq.~(\ref{eq:recedinghorizon}) to Eq.~(\ref{eq:hierarchical}) based on hierarchical optimization scheme.
+
+\subsection{Map-Level Planning}
+In this section, we propose a local planner that gathers local map information and takes the traversability information into account. The local planner interacts with the graph planner to maintain the global sense of the information and decision making.  Recall that our graph planner $\pi^g(v_i)$ produces a controller specific parameter vector $\theta$, which encodes information for reaching nearby nodes.  Here we show how to find the map-level policy $\pi^M(b;\theta)$ given $\theta$.
+
+\ph{Action reward}
+We define the action reward as the reward gained by executing the map-level policy $\pi^M$ at each timestep as a function $R^M(b_t, \pi^M(b_t;\theta)): \mathbb{B} \times \mathbb{A} \to \mathbb{R}$.  
+% $R^M(b_t, \pi^M(b_t;\theta)): \mathbb{B} \times \mathbb{A} \to \mathbb{R}$
+% $R^M(b_t, \pi^M(\cdot)): \mathbb{B} \times \Pi^M \to \mathbb{R}$
+Similar to the graph reward, the action reward can be a function of information gain, risk, or distances:
+\begin{align}
+    R^M(b_t, \pi^M(b_t;\theta)) = \hat{f}(I(b_t,\pi^M),\rho(b_t,\pi^M),d(b_t,\pi^M,\theta))
+\end{align}
+where $\rho$ encodes information about risk and $d(\cdot)$ may encode distance traveled, distance from the goal node, etc.
+
+\ph{Map-level value function}
+We define the map-level value function $J^M(b_t, \pi^M): \mathbb{B} \times \Pi^M \to \mathbb{R}$ as the sum of future expected rewards for a trajectory with $\tau$ timesteps as:
+\begin{align}
+  J^M(b_t,\pi^M(b_t;\theta)) &= \mathbb{E} \left[ \sum_{t'=t}^{t+\tau} R^M(b_{t'},\pi^M(b_{t'};\theta))\right], \label{eq:localplan_cost}
+\end{align}
+
+\ph{Map Policy}
+We optimize the value function above to determine the best map-level policy.  The problem can be formulated as:
+\begin{align}
+  \pi^{M*}(b_t;\theta) &= \argmax_{\pi^M(\cdot,\theta)} J^M(b_t;\pi^M(\cdot,\theta))
   \nonumber \\
-  s.t.~&~\rho_t^M(b; \pi_t^M(b; F^d))< \psi^M(t).
+  s.t.~&~\rho(b_t,\pi^M(\cdot,\theta)) < \psi(k)
   \label{eq:mapopt}
 \end{align}
-where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $M$ are for the map level.
-
-Similarly, we define the map-level policy as follows.
-\begin{align}
-  \pi_t^M(b; F^d) = \pi_t^{T*}(b; F^d, x^d),
-\end{align}
-where $x^d$ is the desired robot pose based on $\pi_b^M$.
+where $\rho(b_t,\pi^M(\cdot,\theta))$ is the risk of the trajectory traversing from $b_t$ under policy $\pi^M(\cdot,\theta)$ and $\psi(t)$ is a time-varying acceptable risk threshold.  As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
 
 
-\subsubsection{Traversability-level Receding-horizon Planning}
-
-\begin{align}
-  \pi_t^{T*}(b; F^d, x^d)
-  &= \argmin_{\Pi_t^T} \mathbb{E} \left[ c^T(b; \pi_t^T(b; F^d, x^d)) \right]
-  \nonumber \\
-  s.t.~&~\rho_t^T(b; \pi_t^T(b; F^d, x^d))< \psi^T(t).
-  \label{eq:travopt}
-\end{align}
-where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $T$ are for the traversability level.
-
-The traversability-level policy returns a desired robot trajectory $x_{t, 0:K}$, where the subscript $k$ denotes the time sub-step, dividing a single time step between $t$ and $t+1$ by $K$ sub-steps.
-
-The cost function in this level can be defined as follows.
-\begin{align}
-  c^T(b; \pi_t^T(b; F^d, x^d)) = c_l \sum_{k=0}^{K-1} d(x_k, x_{k+1}) + c_\rho \sum_{k=0}^K \rho_t^T(x_k),
-\end{align}
-where $d(x_k, x_{k+1})$ is a distance measure between two poses, $x_k$ and $x_{k+1}$.
-$c_l$ and $c_\rho$ are the weights for the path length and the risk measure, respectively.
-
+% \section{Bridge section (abstraction of simplifications)}
+% \todo{move next section hacks here, but pull out some more general idea of why we do these hacks.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Future Work}
+\section{Experimental System \todo{need better title}} \label{sec:hierarchical}
 
+In this section, we present implementation details about the hierarchical information-based planner for autonomous exploration in large unknown environments.
 
-- [local] lower-level planning for local search
+\subsection{Grid Representation}
+We first describe how we specifically determine information gain in the context of occupancy grid mapping.  In this work, we assume that the artifact object detection works perfectly, and decouple perception from our optimization framework.
+In other words, we assume all artifact objects will be detected if the occupancy grid map has been fully covered.
 
-- [local] multi-step look-ahead planning
-
-- [local] leaf node value estimation (prior/heuristic/learn-ing)
-
-- [global] multi-step look-ahead planning
-
-
-
-
-\clearpage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Problem Formulation}
-Let $s$, $\pi_f$, and $M$ denote the robot's state, a move-to-frontier action, and map, respectively. We formulate the coverage objective function as the ratio of newly sensed map information ($B$) to the temporal cost of sensing this information ($c_t$), both of which are functions of the transition function $T(s,\pi_f,M)$.
-
-\begin{align}
-    J^{cov}(s,\pi_f,M) &= \frac{B[T(s,\pi_f,M)]}{c_t[T(s,\pi_f,M)]} \\ \nonumber \\ 
-    T &\colon s \times \pi_f \times M\to \tau \nonumber \\
-    B &\colon \tau\to \Delta n_{bc} \nonumber \\
-    c_t &\colon s \times \pi_f \times M\to \Delta t \nonumber 
-\end{align}
-
-\noindent where, for a given the move-to-frontier action $\pi_f$, $\tau$ is the robot trajectory, $\Delta t$ is duration of traversal, and $\Delta n_{bc}$ is the number of new breadcrumbs added to the IRM. We select an action $\pi_f$ which maximizes our coverage objective function:
-\begin{align}
-    % f^* &= \arg\max_{f\in F}_{~~\tau \in \Gamma} J^{cov}(s,f,M) \\
-    \pi_f^* &= \arg\max_{\substack{\pi_f\in \Pi_f \\ \tau \in T}} J^{cov}(s,f,M) \\
-    s.t.~~&~\textrm{risk}(s,\pi_f,M)< \psi(t)
-\end{align}
-
-\noindent The risk (or probability of traversal) associated with the optimal action is required to be smaller than a time adaptive threshold. As the duration of the mission progresses, the risk threshold $\psi(t)$ increases to allow for riskier actions.
-
-% Let $x_k$, $u_k$, and $z_k$ denote the robot state, action, and observation at the $k$-th time step.
-% \begin{align}
-%     \pi^* &= \arg\min_{\pi\in \Pi} J(?, ?, \pi) \\
-%     s.t.~~&~constraint 1 \\
-%     ~ &~constraint 2
-% \end{align}
-
-\subsection{Defining risk}
-It is easier to define risk as the probability of success, rather than the probability of failure, since for the mission to succeed, we require the intersection of multiple successful events.  Let $r(s,\pi_f,M,t)$ be the probability of success associated at each (timestep?  transition?), which we define as the probability that the robot does not fail or crash for that interval.  We define the total \emph{mission risk} $R$ as the probability that the robot does not fail over the entire mission.  For a given mission duration $D$, the mission risk is given by:
-\begin{equation}
-    R= \prod_{t=0}^D risk(s,\pi_f,M,t)
-\end{equation}
-In general, risk may be a function of the state $s$, actions $\pi_f$, and map $M$.  We can make the simplifying assumption that is is a function each grid cell within the map $m_i$.  (is $m_i$ the occupancy value or the grid itself?  or is $i$ indication the grid?)  Let $m_i(t)$ be the grid cell that the robot occupies at time $t$.  Then we have $risk(m_i(t)) = \prod_{k} r_k(m_i(t))$ where we have $k$ risk factors.  Each risk factor may be due to a different source of potential failure, e.g. rough terrain, proximity to obstacles, slope, slippery/muddy terrain, etc.  For computational tractability we can compute the log mission risk: 
-\begin{equation}
-    \log R=\bigg[\sum_{t=0}^D\sum_{k} \log(r_k(m_i(t)))\bigg] > \Phi
-\end{equation}
-which we want to constrain to be above some total acceptable mission risk threshold $\Phi$.
-\section{Problem Solution}
-
-\subsection{Local Selection}
-
-\begin{itemize}
-  \item Objective 1: Connect local to global coverage
-  \begin{itemize}
-  \item In-depth path planning to selected frontier
-  \item Expectation Model or leaf-node heuristic function
-  \end{itemize}
-  \item Objective 2: More robust traversability (no oscillations!)
-  \begin{itemize}
-  \item Way-point assignments 
-  \end{itemize}
-\end{itemize}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Environment representation}
-\subsection{Occupany Grid Mapping}
-Given a set of observations taken at known robot poses, the posterior over maps is given by:
-\begin{align}
-    p(m | z_{1:t},x_{1:t})
-\end{align}
-\noindent where $m$ is the map, $z_{1:t}$ is the set of all measurements up to time $t$, and $x_{1:t}$ is path of robot. 
-Occupancy grid map is composed of grid cells:
-\begin{align}
-    m = \{\textbf{m}_i\}
-\end{align}
-\noindent where $\textbf{m}_i$ is associated with a binary occupancy value indicating whether cell is occupied or free. Calculating the posterior for every single map is intractable, therefore, problem can be formulated as the posterior over a single grid cell: 
+\subsubsection{Occupancy Grid Mapping}
+We assume that $\textbf{m}_i$ is associated with a binary occupancy value indicating whether cell is occupied or free.  We restrict the underlying map state space to $\mathbb{M}=\{occupied, free\}$. Calculating the posterior for every single map is intractable, therefore, the problem can be formulated as the posterior over a single grid cell: 
 \begin{align}
     p(\textbf{m}_i | z_{1:t},x_{1:t})
 \end{align}
-Here, we are estimating a fixed, binary state that does not change over time. When the state is static, posterior is only function of measurements:
+Here, we are estimating a fixed, binary state that does not change over time. The posterior is only a function of measurements when a state is time-invariant:
 \begin{align}
     p(\textbf{m}_i | z_{1:t},x_{1:t}) = p(\textbf{m}_i | z_{1:t})
     \label{static}
 \end{align}
-This problem can be addressed by the Binary Bayes filter. The \emph{odds} of a state $\textbf{m}_i$ is defined as the ratio of the probability that the cell is free to that of the cell being occupied:
+We update the occupancy grid by the Log-Odds method. The \emph{odds} of a state $\textbf{m}_i$ is defined as the ratio of the probability that the cell is free to the probability that the cell is occupied:
 \begin{align}
     \frac{p(\textbf{m}_i | z_{1:t},x_{1:t})}{1-p(\textbf{m}_i | z_{1:t},x_{1:t})}
     \label{odd}
 \end{align}
-The \emph{log odds} is the logarithm of this ratio:
+The \emph{log-odds} is the logarithm of this ratio:
 
 \begin{align}
     l_{t,i} = \log\frac{p(\textbf{m}_i | z_{1:t},x_{1:t})}{1-p(\textbf{m}_i | z_{1:t},x_{1:t})}
     \label{log_odd}
 \end{align}
-An inverse measurement model, $p(\textbf{m}_i | z_{1:t},x_{1:t})$, which specifies the distribution over the binary state variable $\textbf{m}_i$ as a function of the measurement $z_{1:t}$, is used since the measurements are much more complex than the binary state. 
-\noindent By rearranging Eq.~(\ref{log_odd}), the posterior over the grid cell is exposed:
+We can rearrange the \emph{log-odds} ratio to expose the posterior over the grid cell:
 \begin{align}
     p(\textbf{m}_i | z_{1:t},x_{1:t}) = 1-\frac{1}{1+\exp(l(\textbf{m}_i))}
 \end{align}
-\noindent Eq.~(\ref{log_odd}) can be expanded in accordance with Bayes filter:
+Using Bayes filtering, the \emph{log-odds} ratio can be recursively computed using the following expression: 
+% \begin{align}
+%     l_{t,i} &= \log\frac{p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})}{1-p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} \nonumber \\
+%     &\quad - \log\frac{p(\textbf{m}_i)}{1-p(\textbf{m}_i)} \nonumber \\
+%     &= l_{t-1,i} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} - l_{0,i}
+% \end{align}
 \begin{align}
-    l_{t,i} &= \log\frac{p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})}{1-p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} \nonumber \\
-    &\quad - \log\frac{p(\textbf{m}_i)}{1-p(\textbf{m}_i)} \nonumber \\
-    &= l_{t-1,i} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} - l_{0,i}
+    l_{t,i} = l_{t-1,i} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} - l_{0,i}
 \end{align}
 \noindent where $l_{t-1,i}$ is the previous log-odds value, $l_{0,i}$ is the log-odds representation of the occupancy prior $p(\textbf{m}_i)$, and $p(\textbf{m}_i | z_{t},x_{t})$ is the inverse sensor model.
 
-However, this formulation does not reflect dependencies among neighboring cells. 
+There are drawbacks of the Log-Odds method, namely the formulation does not reflect dependencies among neighboring cells, and only a single number is stored per cell. \todo{I think this is where CRM should come in}
 
-\subsection{Information Gain}
+\subsubsection{Information Gain}
 Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x)$ of a probability distribution $p$ is the expected information $E[-\log p]$. The entropy of the occupancy grid map posterior is
 \begin{align}
     H_p(\textbf{m}_i) = -p(\textbf{m}_i) \log p(\textbf{m}_i) - (1-p(\textbf{m}_i)) \log(1-p(\textbf{m}_i))
@@ -407,40 +731,570 @@ Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x)$ of
 \end{align}
 
 
+\subsection{Graph-level Planning}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Risk quantification}
-In this section, we discuss how we associate risk and cost values to a given trajectory in the environment.
+% \subsubsection{Information Reward Encoder (??)}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Frontier-based Coverage Planning}
+\ph{Graph policy output}
+We let the output of the graph policy $\pi^g(v_i)$ be a nearby node $\theta=v_j$, which is connected via a short path through free space.
 
-\subsection{IRM}
+\ph{Graph edge transition}
+We assume that $\pi^{g}(v_i)$ induces a  transition from nodes $v_i$ to $v_j$ with probability 1:
+\begin{align}
+    T^{g} (v_i, \pi^g(v_i), v_j) = 1
+\end{align}
+
+\ph{Graph action information reward}
+We can approximate the graph action information reward $I^g(v, \pi^g)$ by the number of unknown cells within a 5m radius of the goal node $\pi^g(v_i)=v_j$.  This is an effective approximation when we assume a perfect sensor model which changes the probability of occupancy from 0.5 to either 1 or 0.  
+
+\ph{Graph reward}
+We can define the graph reward as:
+\begin{align}
+    R^g(v_i, \pi^g) = \frac{I^g(v_i,\pi^g)}{\alpha_\tau \cdot \tau(v,\pi^g)}
+\end{align}
+where $\tau$ is the time to reach the goal node $v_j$, and $\alpha_\tau$ weighs the cost of traversal $\tau(v,\pi^g)$ against the expected new information gain $I^g(v_i,\pi^g)$ when executing a policy $\pi^g(v_i)$.  
+
+\ph{Frontier rollout}
+To assign a value to $\hat{I}^{g}(v_j)$, the graph expansion reward, we can employ a "space filling" heuristic.  We can compute Voronoi regions around each frontier to determine the maximum candidate region that frontier uniquely encodes.  Then, within the region we can compute the number of unknown cells, divided by the expected time it takes to traverse the area (assuming no obstacles).  See Figure \ref{fig:info_heuristic}.
+
+\begin{figure}[ht!]
+  \includegraphics[width=.45\textwidth]{figures/irm_voronoi_combined.png}  \caption{Information gain heuristic.  Green circles around breadcrumbs indicate explored areas.  Green lines indicate limits of areas to compute expected information gain, for each frontier within it.}
+  \label{fig:info_heuristic}
+\end{figure}
+
+\ph{Belief tree search overview}
+We employ POMCP \cite{silver2010monte} for the belief tree search.
+It basically uses Monte Carlo tree search (MCTS), but the $\epsilon$-greedy action selection is altered by the UCT algorithm by explicitly considering the number of visits during search.
+It has several advantages for our problem compared to other tree search algorithms such as Q-learning \cite{watkins1992q} or RTDP \cite{barto1995learning}.
+It has a low bias in action selection, so it can search for a wide set of branches of the tree, and it does not require admissible heuristic functions. % while it may converge more slowly.
+
+\ph{Belief tree search details}
+A brief description of the belief tree search algorithm is presented in Algorithm~\ref{alg:pomcp}.
+A robot maintains a belief tree where each node represents a belief state and each edge represents a graph action by the robot. We define the root node of our tree as the node closest to the robot's current pose. The tree incrementally grows from the root node through four phases: selection, expansion, simulation, and backpropagation. During selection, successive child nodes are selected until a leaf node is reached. If this leaf node is not terminal, then one or more child nodes are created according to the available actions at the leaf node. In the simulation phase, the utility of the expanded node is estimated by performing the \emph{frontier rollout} policy. During backpropogation, all node rewards along the path are updated according to the rollout evaluation. The visit count is also updated accordingly. For more details, refer to \cite{silver2010monte}.
+
+\begin{algorithm}[t!]
+\caption{Belief Tree Search Algorithm}
+\label{alg:pomcp}
+\begin{algorithmic} 
+  \STATE Start from the current belief state
+  \WHILE{the planning time remains}
+    \WHILE{the finite horizon or a terminal node is not yet reached}
+      \STATE Select the best action that maximizes the value function but with some exploration bonus
+      \STATE Get the successor node (from the IRM or a generative model)
+      \STATE Add the new successor node to the tree
+    \ENDWHILE
+    \STATE Update the values and the number of visits by backpropagation from the leaf node to the root node
+  \ENDWHILE
+\end{algorithmic}
+\end{algorithm}
 
 
 
-\subsection{Frontier Detection}
+\subsection{Grid-level Planning}
 
-\subsubsection{Frontier map}
-\todo{David} How we represent 3D lidar data in 2D frontier map
-\begin{itemize}
-    \item We want to capture traversability information here
-    \item We can include a full discussion about traversability analysis, computing risk metrics for traversal, and capturing known vs. unknown regions
-    \item We can fold in the current writeup on traversability here, then add additional risk/traversability metrics
-\end{itemize}
-\subsubsection{Frontier detection}
-\todo{Sung} Frontier detection algorithm
+\ph{Map reward}
+We implement the map reward function as:
+\begin{align}
+    R^M(b_t, \pi^M(b_t;v_j) = I(b_t,\pi^M) + \alpha_d d(x_t,v_j)
+\end{align}
+where we weigh the information gain with the distance from the goal $v_j$ with $\alpha_d$.
+
+\ph{Risk Definition}
+We define risk  $\rho(b_t,\pi^M(\cdot,\theta)) = \rho(v_i,\pi^M(\cdot,v_j))$ as the probability of failing to safely traverse from node $v_i$ to $v_j$.  To calculate this probability we compute the probability of safety traversing each cell in the map.  Within each grid cell, there may exist multiple risk factors.  Denote the number of risk factors as $n_\rho$.  Each risk factor may be due to a different source of potential failure, e.g. rough terrain, proximity to obstacles, slope, slippery/muddy terrain, etc.  We can then compute the probability of failing to traverse a cell $\rho_c(m^i)$ as:
+\begin{align}
+    \rho_c(m^i) = 1-\prod_{r=1}^{n_\rho} (1-\rho_r(m^i))
+\end{align}
+We then compute the risk of the entire path from node $v_i$ to node $v_j$ as the aggregate risk of traversing the cells along the path:
+\begin{align}
+    \rho(v_i,\pi^M(\cdot,v_j))=1-\prod_t^{t+\tau}(1-\rho_c(m^{i_t}))
+\end{align}
+which we want to constrain to be below some graph-level risk threshold $\psi(k)$.
+
+\ph{Planner implementation}
+To find the optimal path from node $v_i$ to $v_j$, we can optimize Eq. (\ref{eq:mapopt}) with any approximate method.  A wide range of approximations exist for solving the general information maximization problem.  A low fidelity approximation might be to reduce the problem to a simple $A^*$ search by finding the highest-reward path between node $v_i$ and $v_j$.  To disentangle the effect of updating the map belief after taking an action, we can make the approximation that the information to be gained at each grid cell is simply the number of unknown cells within the local sensing radius.  Then we can employ $A^*$ search on grid cells which are below a desired risk threshold.
+
+\begin{figure}[ht!]
+  \includegraphics[width=.48\textwidth]{figures/structure_v5.png}
+  \centering
+  \caption{Hierarchical Information-based Planner Architecture}
+  \label{fig:architecture}
+\end{figure}
+
+\section{Experimental Validation}\label{sec:urban}
+We evaluated the proposed method during the Urban Circuit of the DARPA Subterranean Challenge in February 2020. Two multi-level courses (Alpha and Beta) were configured in an unfinished power plant station. A team of robots, comprising two quadraped Spot and two differential-drive wheeled Husky robots, were allowed one hour to explore each course. Below we present our multi-resolution exploration planner implemented during the Challenge. As a first iteration simplification, we classify graph planning as either local or global. 
+
+\subsubsection{Local Graph-level policy}
+The local graph-level policy maps the graph $G$ and node $v_i$ associated with the robot's current state to a frontier node $v_j$:
+\begin{align}
+  \pi^g: (G,v_i) \rightarrow v_j,~~ v_j \in F
+\end{align}
+We define the graph-level reward as:
+\begin{align}
+    J^{g}(v_i, \pi^g) &= \theta_{bearing}(v_i, I^g(v_i,\pi^g)) 
+\end{align}
+The output of a graph policy $\pi^g$ is a frontier node $v_j$. The expected information gain $I^g$ is evaluated by the creation of frontier nodes, and serves an an input to the cost of traversal function $\theta_{bearing}$. We use bearing angle, or the relative planar angle between the robot's heading direction and a frontier, as the graph-level cost as it is correlated with the time required to execute a graph policy. Specifically, graph policies (i.e. frontier goals) that minimize velocity changes are associated with lower execution times, and therefore are preferable.  
+
+We then define the optimal graph policy as:
+\begin{align}
+    \pi^{g*} &= \arg\min_{\pi^g \in \Pi} J^{g}(v_i, \pi^g) \nonumber \\
+    ~s.t.,~~~ & \rho(v_i,\pi^M(\cdot,v_j)) > \psi(t) \nonumber \\
+    & |\theta_{bearing}(v_i, v_j)| < \pi/2 
+    \label{eq:local_constraint}
+\end{align}
+where $\rho(v_i,\pi^M(\cdot,v_j))$ is the probability of a traversal between $v_i$ and $v_j$. While the first constraint ensures that the selected frontier is traversable, the latter constraint on the bearing angle $\theta_{bearing}(v_i, v_j)$ results in a depth-first exploration behavior. A global graph-level policy is adopted if no local graph-level policy exists satisfying these constraints
+
+\subsubsection{Global Graph-level policy}
+Frontier nodes are clustered according to the minimum number of edges connecting any two sets of observations through a hierarchical agglomerative clustering strategy. The number of frontiers in a cluster $F^d$ is denoted by $|F^d|$, and the minimum number of edges between a node $v_i$ and cluster $F^d$ is $n_E(v_i,F^d)$. 
+
+The global graph-level policy maps the graph $G$ and node $v_i$ associated with the robot's current pose to the frontier node closest to the centroid of a frontier cluster $F^d$:
+\begin{align}
+  \pi^g&: (G,v_i) \rightarrow v_{j} \nonumber \\
+  ~s.t.,~~~ &v_j= \arg\min_{v_j \in F} dist(v_{j}, centroid(F^d))
+\end{align}
+We define the graph-level information gain $I^g$ and cost $\tau$ for a graph-level policy as:
+\begin{align}
+    I^g(v_i,\pi^g) &= |F^d| \nonumber \\
+    \tau(v_i,\pi^g) &= n_E(v_i,F^d) 
+\end{align}
+The expected information gain for a given graph policy is cluster size $|F^d|$ as it is indicative of an unexplored region's expanse. Then given a starting node $v_i$, we define the graph-level reward $J^g$ associated with a graph-level policy $\pi^g$ as: 
+\begin{align}
+    J^{g}(v_i, \pi^g) &= I^g(v_i,\pi^g) + \alpha~\tau(v_i,\pi^g)^{-1}
+\end{align}
+where $\alpha$ weighs the cost of traversal against new information gain for a given frontier cluster. We then define the optimal graph policy as:
+\begin{align}
+    \pi^{g*} &= \arg\min_{\pi^g \in \Pi} J^{g}(v_i, \pi^g) \nonumber
+\end{align}
+
+\subsubsection{Grid-level policy}
+
+\subsubsection{Overall policy}
+Given a graph-level policy, overall policy is:
+\begin{align}
+  \pi_t(G, v_j) = 
+  \begin{dcases*}
+    \pi_t^{M*}(v_i, \pi^g(v_i)) & if $v_j \in \mathbb{N}(v_i)$ \\
+    a_t^g(G, \pi^g(v_i)) & otherwise 
+  \end{dcases*},
+\end{align}
+where $\mathbb{N}(v_i)$ denotes the neighborhood of the node $v_i$ associated with the robot's current state. $\pi_t^{M*}$ is an optimal policy in the map level given that the graph-level policy outputs a node $v_j$ in the neighborhood of $v_i$, and $a_t^G(G, v_i)$ is the shortest sequence of IRM edges to $v_j$.
+
+\subsection{Results}
+
+Figure \ref{fig:beta_map} shows the map constructed during exploration of the Beta course. The ground floor of the course was mapped within 30 minutes.  
+
+\begin{figure}[h!]
+\centering
+    \begin{tikzpicture}
+	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.48\textwidth]{figures/map_snapshots_combined_cropped.png}};
+	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+	    
+	    	% Annotations
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.1,0.66) {1.8 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.43,0.66) {3.6 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.76,0.66) {6.6 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.1,0.33) {9.6 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.44,0.33) {14.4 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.77,0.33) {15.6 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.11,0.005) {24.6 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.43,0.005) {27 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.75,0.005) {60 m};
+	    	
+	        % helpers
+	       % \draw[help lines,xstep=.1,ystep=.1] (0,0) grid (1,1);
+	       % \foreach \x in {0,1,...,9} { \node [anchor=north] at (\x/10,0) {0.\x}; }
+	       % \foreach \y in {0,1,...,9} { \node [anchor=east] at (0,\y/10) {0.\y}; }
+	       
+	    \end{scope}
+	\end{tikzpicture}	
+\caption{Sequential snapshots of map generated during exploration of Beta course during Urban Circuit of DARPA Subterranean Challenge. Four robots participated. An axis denotes each robot's location. The course runtime associated with each snapshot is given in the bottom left corner.} \label{fig:beta_map} 
+\end{figure}
 
 
-\subsection{Frontier Maintenance}
-\todo{Sung} Frontier node maintenance details
+\begin{figure}[ht!]
+  \includegraphics[width=.48\textwidth]{figures/dist_traveled.pdf}
+  \centering
+  \caption{Total distance traveled over time and total area covered over time during Team CoSTAR's second run on the Beta course in the DARPA Subterranean Challenge Urban Circuit.}
+  \label{fig:dist_traveled}
+\end{figure}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Experiments}
+\begin{figure}[ht!]
+  \includegraphics[width=.48\textwidth]{figures/paths_on_map.png}
+  \centering
+  \caption{Overlay of paths traveled by robots over time on the ground truth pointcloud of the competition course.  Color indicates time at which the path was traversed, from purple ($t=0$) to yellow ($t=60min$).}
+  \label{fig:paths_on_map}
+\end{figure}
+
+
+% \section{Old stuff, move to implementation}
+
+% \begin{figure}[ht!]
+%   \includegraphics[width=.48\textwidth]{figures/structure_v3.png}
+%   \centering
+%   \caption{Implementation Architecture}
+%   \label{fig:architecture}
+% \end{figure}
+
+
+% \ph{Defining expected value of frontiers (pt.2)}
+
+% \begin{figure}[ht!]
+%   \centering
+%   \includegraphics[width=.3\textwidth]{figures/irm_frontier_expected_value.png}
+%   \caption{}
+%   \label{fig:info_heuristic2}
+% \end{figure}
+
+
+% \ph{Possibly outdated}
+% Our proposed framework is composed of receding-horizon planners in three hierarchical levels--graph, map, and traversability levels.
+% Graph-level planning is conducted on the IRM, using the embedded information in its nodes and edges.
+% Map-level planning uses a local occupancy grid map (20m$\times$20m) that is centered at the current robot pose.
+% Traversability-level planning uses a smaller local occupancy grid map (5m$\times$5m) and the corresponding point cloud sensor data for the robot-specific traversability analysis.
+% In order to ensure the robots continue autonomous exploration over time, we additionally impose a constraint regarding the risk level on each optimization problem.
+
+
+% \subsubsection{Graph-level Receding-horizon Planning}
+
+% \begin{align}
+%   \pi_t^{G*}(b) &= \argmax_{\Pi_t^G} \mathbb{E} \left[ \frac{I^G(b; \pi_t^G(b))}{c_t^G(b; \pi_t^G(b))} \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^G(b; \pi_t^G(b))< \psi^G(t).
+%   \label{eq:graphopt}
+% \end{align}
+% where $I^G(b; \pi_t^G(b))$ is the information gain in the graph level,
+% $c_t^G(b; \pi_t^G(b))$ is a cost function that returns a time to execute an action under $\pi_t^G$.
+% $\rho_t^G(b; \pi_t^G(b))$ is a risk measure for taking an action at $b$ under $\pi_t^G$, and
+% $\psi^G(t)$ is a time-varying threshold for allowable risk at time $t$.
+% (For example, $\psi^G(t)$ gets higher as $t$ gets closer to $T$, the total allowed time for exploration, in order to allow riskier actions.)
+
+% \ph{Breadcrumb}
+% Breadcrumb $x\in \mathbb{X}$ is a sampled state in the robot pose space. $C(x)\in M$ denotes a subset of the occupancy map comprised of cells in the radius $r$ of the breadcrumb $x$.
+
+% \ph{Frontier}
+% Breadcrumb $F\in \mathbb{X}$ is a sampled state in the robot pose space. $C(F)\in M$ denotes a subset of the occupancy map comprised of cells in the radius $r$ of the breadcrumb $F$.
+
+% %\ph{Frontier cluster}
+
+% \ph{Graph-level policy}
+% We define the graph-level policy as follows.
+% \begin{align}
+%   \pi_t^G(b): (G,b) \rightarrow F^d
+% \end{align}
+
+% \begin{align}
+%   \pi_t^G(b) = 
+%   \begin{dcases*}
+%     \pi_t^{M*}(b; F^d) & if $b \in C(F^d)$ \\
+%     a_t^G(b; F^d) & otherwise 
+%   \end{dcases*},
+% \end{align}
+% where $F^d$ is the desired frontier cluster (\todo{TODO: need more explanation}\!\!) based on $\pi_t^G$, and
+% $\mathbb{N}(F^d)$ stands for the neighborhood belief states of $F^d$.
+% $\pi_t^{M*}(b; F^d)$ is an optimal policy in the map level for $b$ given $F^d$, and
+% $a_t^G(b; F^d)$ is an abstract graph-level action to reach $F^d$ following the shortest path IRM edges.
+% \note{We may add another low-level optimization that solves for the concrete robot trajectory $x_{0:k}$ for the given $a_t^G$, which is effectively the mobility service in our implementation.}
+% \hn{If the low-level service is already in operation, would it need to be modified function with this particular graph level policy?}
+
+
+% \subsubsection{Local Information-gain Receding-horizon Planning}
+% \todo{Bounded Map!}
+% \begin{align}
+%   \pi_t^{M*}(b; F^d) &= \argmax_{\Pi_t^M} \mathbb{E} \left[ \frac{I^M(b; \pi_t^M(b; F^d))}{c_t^M(b; \pi_t^M(b; F^d))} \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^M(b; \pi_t^M(b; F^d))< \psi^M(t).
+%   \label{eq:mapopt}
+% \end{align}
+% where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $M$ are for the map level.
+
+% Similarly, we define the map-level policy as follows.
+% \begin{align}
+%   \pi_t^M(b; F^d) = \pi_t^{T*}(b; F^d, x^d),
+% \end{align}
+% where $x^d$ is the desired robot pose based on $\pi_b^M$.
+
+
+% \subsubsection{Traversability-level Receding-horizon Planning}
+
+% \begin{align}
+%   \pi_t^{T*}(b; F^d, x^d)
+%   &= \argmin_{\Pi_t^T} \mathbb{E} \left[ c^T(b; \pi_t^T(b; F^d, x^d)) \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^T(b; \pi_t^T(b; F^d, x^d))< \psi^T(t).
+%   \label{eq:travopt}
+% \end{align}
+% where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $T$ are for the traversability level.
+
+% The traversability-level policy returns a desired robot trajectory $x_{t, 0:K}$, where the subscript $k$ denotes the time sub-step, dividing a single time step between $t$ and $t+1$ by $K$ sub-steps.
+
+% The cost function in this level can be defined as follows.
+% \begin{align}
+%   c^T(b; \pi_t^T(b; F^d, x^d)) = c_l \sum_{k=0}^{K-1} d(x_k, x_{k+1}) + c_\rho \sum_{k=0}^K \rho_t^T(x_k),
+% \end{align}
+% where $d(x_k, x_{k+1})$ is a distance measure between two poses, $x_k$ and $x_{k+1}$.
+
+
+% \todo{
+% Things to do:
+% \begin{enumerate}
+%     \item Details of computing $I^E(v_i,\pi^G)$
+%     \item Details of computing $I^V(v_j)$
+%     \item How to compute risk $\rho$
+%     \item Details of IRM planner implementation
+%     \item Details of Local planner implementation
+%     \item Details of Graph expansion
+%     \item Details of 
+% \end{enumerate}
+% }
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
+
+In this work, we have developed a framework for exploring unknown environments in a POMDP framework in extremely large environments.  
+To obtain a tractable solution we discretize the belief space into a robot and task-relevant graph structure which reduces our search space for good policies.  We call this graph structure an Information Roadmap (IRM).  We demonstrate these capabilites in the DARPA Subterranean Challenge.  Future work includes learning based methods for graph expansion information gain estimation, multi-robot policy search, and a richer incorporation of risk and time into the graph planning framework.
+
+
+% \clearpage
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Problem Formulation}
+% Let $s$, $\pi_f$, and $M$ denote the robot's state, a move-to-frontier action, and map, respectively. We formulate the coverage objective function as the ratio of newly sensed map information ($B$) to the temporal cost of sensing this information ($c_t$), both of which are functions of the transition function $T(s,\pi_f,M)$.
+
+% \begin{align}
+%     J^{cov}(s,\pi_f,M) &= \frac{B[T(s,\pi_f,M)]}{c_t[T(s,\pi_f,M)]} \\ \nonumber \\ 
+%     T &\colon s \times \pi_f \times M\to \tau \nonumber \\
+%     B &\colon \tau\to \Delta n_{bc} \nonumber \\
+%     c_t &\colon s \times \pi_f \times M\to \Delta t \nonumber 
+% \end{align}
+
+% \noindent where, for a given the move-to-frontier action $\pi_f$, $\tau$ is the robot trajectory, $\Delta t$ is duration of traversal, and $\Delta n_{bc}$ is the number of new breadcrumbs added to the IRM. We select an action $\pi_f$ which maximizes our coverage objective function:
+% \begin{align}
+%     % f^* &= \arg\max_{f\in F}_{~~\tau \in \Gamma} J^{cov}(s,f,M) \\
+%     \pi_f^* &= \arg\max_{\substack{\pi_f\in \Pi_f \\ \tau \in T}} J^{cov}(s,f,M) \\
+%     s.t.~~&~\textrm{risk}(s,\pi_f,M)< \psi(t)
+% \end{align}
+
+% \noindent The risk (or probability of traversal) associated with the optimal action is required to be smaller than a time adaptive threshold. As the duration of the mission progresses, the risk threshold $\psi(t)$ increases to allow for riskier actions.
+
+% % Let $x_k$, $u_k$, and $z_k$ denote the robot state, action, and observation at the $k$-th time step.
+% % \begin{align}
+% %     \pi^* &= \arg\min_{\pi\in \Pi} J(?, ?, \pi) \\
+% %     s.t.~~&~constraint 1 \\
+% %     ~ &~constraint 2
+% % \end{align}
+
+% \subsection{Defining risk}
+% It is easier to define risk as the probability of success, rather than the probability of failure, since for the mission to succeed, we require the intersection of multiple successful events.  Let $r(s,\pi_f,M,t)$ be the probability of success associated at each (timestep?  transition?), which we define as the probability that the robot does not fail or crash for that interval.  We define the total \emph{mission risk} $R$ as the probability that the robot does not fail over the entire mission.  For a given mission duration $D$, the mission risk is given by:
+% \begin{equation}
+%     R= \prod_{t=0}^D risk(s,\pi_f,M,t)
+% \end{equation}
+% In general, risk may be a function of the state $s$, actions $\pi_f$, and map $M$.  We can make the simplifying assumption that is is a function each grid cell within the map $m_i$.  (is $m_i$ the occupancy value or the grid itself?  or is $i$ indication the grid?)  Let $m_i(t)$ be the grid cell that the robot occupies at time $t$.  Then we have $risk(m_i(t)) = \prod_{k} r_k(m_i(t))$ where we have $k$ risk factors.  Each risk factor may be due to a different source of potential failure, e.g. rough terrain, proximity to obstacles, slope, slippery/muddy terrain, etc.  For computational tractability we can compute the log mission risk: 
+% \begin{equation}
+%     \log R=\bigg[\sum_{t=0}^D\sum_{k} \log(r_k(m_i(t)))\bigg] > \Phi
+% \end{equation}
+% which we want to constrain to be above some total acceptable mission risk threshold $\Phi$.
+% \section{Problem Solution}
+
+% \subsection{Local Selection}
+
+% \begin{itemize}
+%   \item Objective 1: Connect local to global coverage
+%   \begin{itemize}
+%   \item In-depth path planning to selected frontier
+%   \item Expectation Model or leaf-node heuristic function
+%   \end{itemize}
+%   \item Objective 2: More robust traversability (no oscillations!)
+%   \begin{itemize}
+%   \item Way-point assignments 
+%   \end{itemize}
+% \end{itemize}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Environment representation}
+% \subsection{Occupancy Grid Mapping}
+% Given a set of observations taken at known robot poses, the posterior over maps is given by:
+% \begin{align}
+%     p(m | z_{1:t},x_{1:t})
+% \end{align}
+% \noindent where $m$ is the map, $z_{1:t}$ is the set of all measurements up to time $t$, and $x_{1:t}$ is path of robot. 
+% Occupancy grid map is composed of grid cells:
+% \begin{align}
+%     m = \{\textbf{m}_i\}
+% \end{align}
+% \noindent where $\textbf{m}_i$ is associated with a binary occupancy value indicating whether cell is occupied or free. Calculating the posterior for every single map is intractable, therefore, problem can be formulated as the posterior over a single grid cell: 
+% \begin{align}
+%     p(\textbf{m}_i | z_{1:t},x_{1:t})
+% \end{align}
+% Here, we are estimating a fixed, binary state that does not change over time. When the state is static, posterior is only function of measurements:
+% \begin{align}
+%     p(\textbf{m}_i | z_{1:t},x_{1:t}) = p(\textbf{m}_i | z_{1:t})
+%     \label{static}
+% \end{align}
+% This problem can be addressed by the Binary Bayes filter. The \emph{odds} of a state $\textbf{m}_i$ is defined as the ratio of the probability that the cell is free to that of the cell being occupied:
+% \begin{align}
+%     \frac{p(\textbf{m}_i | z_{1:t},x_{1:t})}{1-p(\textbf{m}_i | z_{1:t},x_{1:t})}
+%     \label{odd}
+% \end{align}
+% The \emph{log odds} is the logarithm of this ratio:
+
+% \begin{align}
+%     l_{t,i} = \log\frac{p(\textbf{m}_i | z_{1:t},x_{1:t})}{1-p(\textbf{m}_i | z_{1:t},x_{1:t})}
+%     \label{log_odd}
+% \end{align}
+% An inverse measurement model, $p(\textbf{m}_i | z_{1:t},x_{1:t})$, which specifies the distribution over the binary state variable $\textbf{m}_i$ as a function of the measurement $z_{1:t}$, is used since the measurements are much more complex than the binary state. 
+% \noindent By rearranging Eq.~(\ref{log_odd}), the posterior over the grid cell is exposed:
+% \begin{align}
+%     p(\textbf{m}_i | z_{1:t},x_{1:t}) = 1-\frac{1}{1+\exp(l(\textbf{m}_i))}
+% \end{align}
+% \noindent Eq.~(\ref{log_odd}) can be expanded in accordance with Bayes filter:
+% \begin{align}
+%     l_{t,i} &= \log\frac{p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})}{1-p(\textbf{m}_i | z_{1:t-1}, x_{1:t-1})} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} \nonumber \\
+%     &\quad - \log\frac{p(\textbf{m}_i)}{1-p(\textbf{m}_i)} \nonumber \\
+%     &= l_{t-1,i} + \log\frac{p(\textbf{m}_i | z_{t},x_{t})}{1-p(\textbf{m}_i | z_{t},x_{t})} - l_{0,i}
+% \end{align}
+% \noindent where $l_{t-1,i}$ is the previous log-odds value, $l_{0,i}$ is the log-odds representation of the occupancy prior $p(\textbf{m}_i)$, and $p(\textbf{m}_i | z_{t},x_{t})$ is the inverse sensor model.
+
+% However, this formulation does not reflect dependencies among neighboring cells. 
+
+% \subsection{Information Gain}
+% Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x)$ of a probability distribution $p$ is the expected information $E[-\log p]$. The entropy of the occupancy grid map posterior is
+% \begin{align}
+%     H_p(\textbf{m}_i) = -p(\textbf{m}_i) \log p(\textbf{m}_i) - (1-p(\textbf{m}_i)) \log(1-p(\textbf{m}_i))
+% \end{align}
+% \noindent and the expected entropy after measuring is $E[H_{p}(\textbf{m}_i)]$. Then the expected information gain when sensing a grid cell $\textbf{m}_i$ is: 
+% \begin{align}
+%     I_i = H_p(\textbf{m}_i) - E[H_{p}(\textbf{m}_i)]
+% \end{align}
+
+
+
+% \subsection{Receding-horizon Hierarchical Optimization}
+
+
+% % We employ two strategies to solve our optimization problem; receding-horizon planning and hierarchical optimization.
+% %
+% % Due to the curse of history in POMDPs, the problem complexity increases exponentially with the planning horizon \cite{Pineau03}.
+% % Receding-horizon planning is a common scheme to tackle such a challenge by interleaving execution and replanning for a finite horizon.
+% %
+% % Hierarchical optimization is also a useful methodology to solve large-scale problems in accordance with the divide-and-conquer paradigm.
+% % \todo{TODO: add references for each.}
+
+% Our proposed framework is composed of receding-horizon planners in three hierarchical levels--graph, map, and traversability levels.
+% Graph-level planning is conducted on the IRM, using the embedded information in its nodes and edges.
+% Map-level planning uses a local occupancy grid map (20m$\times$20m) that is centered at the current robot pose.
+% Traversability-level planning uses a smaller local occupancy grid map (5m$\times$5m) and the corresponding point cloud sensor data for the robot-specific traversability analysis.
+% In order to ensure the robots continue autonomous exploration over time, we additionally impose a constraint regarding the risk level on each optimization problem.
+
+
+% \subsubsection{Graph-level Receding-horizon Planning}
+
+% \begin{align}
+%   \pi_t^{G*}(b) &= \argmax_{\Pi_t^G} \mathbb{E} \left[ \frac{I^G(b; \pi_t^G(b))}{c_t^G(b; \pi_t^G(b))} \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^G(b; \pi_t^G(b))< \psi^G(t).
+%   \label{eq:graphopt}
+% \end{align}
+% where $I^G(b; \pi_t^G(b))$ is the information gain in the graph level,
+% $c_t^G(b; \pi_t^G(b))$ is a cost function that returns a time to execute an action under $\pi_t^G$.
+% $\rho_t^G(b; \pi_t^G(b))$ is a risk measure for taking an action at $b$ under $\pi_t^G$, and
+% $\psi^G(t)$ is a time-varying threshold for allowable risk at time $t$.
+% (For example, $\psi^G(t)$ gets higher as $t$ gets closer to $T$, the total allowed time for exploration, in order to allow riskier actions.)
+
+% % \ph{Breadcrumb}
+% % Breadcrumb $x\in \mathbb{X}$ is a sampled state in the robot pose space. $C(x)\in M$ denotes a subset of the occupancy map comprised of cells in the radius $r$ of the breadcrumb $x$.
+
+% % \ph{Frontier}
+% % Breadcrumb $F\in \mathbb{X}$ is a sampled state in the robot pose space. $C(F)\in M$ denotes a subset of the occupancy map comprised of cells in the radius $r$ of the breadcrumb $F$.
+
+% %\ph{Frontier cluster}
+
+% \ph{Graph-level policy}
+% We define the graph-level policy as follows.
+% \begin{align}
+%   \pi_t^G(b): (G,b) \rightarrow F^d
+% \end{align}
+
+% \begin{align}
+%   \pi_t^G(b) = 
+%   \begin{dcases*}
+%     \pi_t^{M*}(b; F^d) & if $b \in C(F^d)$ \\
+%     a_t^G(b; F^d) & otherwise 
+%   \end{dcases*},
+% \end{align}
+% where $F^d$ is the desired frontier cluster (\todo{TODO: need more explanation}\!\!) based on $\pi_t^G$, and
+% $\mathbb{N}(F^d)$ stands for the neighborhood belief states of $F^d$.
+% $\pi_t^{M*}(b; F^d)$ is an optimal policy in the map level for $b$ given $F^d$, and
+% $a_t^G(b; F^d)$ is an abstract graph-level action to reach $F^d$ following the shortest path IRM edges.
+% \note{We may add another low-level optimization that solves for the concrete robot trajectory $x_{0:k}$ for the given $a_t^G$, which is effectively the mobility service in our implementation.}
+
+
+% \subsubsection{Local Information-gain Receding-horizon Planning}
+% \todo{Bounded Map!}
+% \begin{align}
+%   \pi_t^{M*}(b; F^d) &= \argmax_{\Pi_t^M} \mathbb{E} \left[ \frac{I^M(b; \pi_t^M(b; F^d))}{c_t^M(b; \pi_t^M(b; F^d))} \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^M(b; \pi_t^M(b; F^d))< \psi^M(t).
+%   \label{eq:mapopt}
+% \end{align}
+% where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $M$ are for the map level.
+
+% Similarly, we define the map-level policy as follows.
+% \begin{align}
+%   \pi_t^M(b; F^d) = \pi_t^{T*}(b; F^d, x^d),
+% \end{align}
+% where $x^d$ is the desired robot pose based on $\pi_b^M$.
+
+
+% \subsubsection{Traversability-level Receding-horizon Planning}
+
+% \begin{align}
+%   \pi_t^{T*}(b; F^d, x^d)
+%   &= \argmin_{\Pi_t^T} \mathbb{E} \left[ c^T(b; \pi_t^T(b; F^d, x^d)) \right]
+%   \nonumber \\
+%   s.t.~&~\rho_t^T(b; \pi_t^T(b; F^d, x^d))< \psi^T(t).
+%   \label{eq:travopt}
+% \end{align}
+% where the notations are the same with Eq.~(\ref{eq:graphopt}) except that those with the superscript $T$ are for the traversability level.
+
+% The traversability-level policy returns a desired robot trajectory $x_{t, 0:K}$, where the subscript $k$ denotes the time sub-step, dividing a single time step between $t$ and $t+1$ by $K$ sub-steps.
+
+% The cost function in this level can be defined as follows.
+% \begin{align}
+%   c^T(b; \pi_t^T(b; F^d, x^d)) = c_l \sum_{k=0}^{K-1} d(x_k, x_{k+1}) + c_\rho \sum_{k=0}^K \rho_t^T(x_k),
+% \end{align}
+% where $d(x_k, x_{k+1})$ is a distance measure between two poses, $x_k$ and $x_{k+1}$.
+% $c_l$ and $c_\rho$ are the weights for the path length and the risk measure, respectively.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Risk quantification}
+% In this section, we discuss how we associate risk and cost values to a given trajectory in the environment.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Frontier-based Coverage Planning}
+
+% \subsection{IRM}
+
+
+
+% \subsection{Frontier Detection}
+
+% \subsubsection{Frontier map}
+% \todo{David} How we represent 3D lidar data in 2D frontier map
+% \begin{itemize}
+%     \item We want to capture traversability information here
+%     \item We can include a full discussion about traversability analysis, computing risk metrics for traversal, and capturing known vs. unknown regions
+%     \item We can fold in the current writeup on traversability here, then add additional risk/traversability metrics
+% \end{itemize}
+% \subsubsection{Frontier detection}
+% \todo{Sung} Frontier detection algorithm
+
+
+% \subsection{Frontier Maintenance}
+% \todo{Sung} Frontier node maintenance details
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Experiments}
 
 
 
@@ -477,170 +1331,270 @@ In this section, we discuss how we associate risk and cost values to a given tra
 
 
 
-\section*{APPENDIX}
+% % \section*{APPENDIX}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Background}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Background}
 
-\subsection{Partially Observable Markov Decision Process (POMDP)}
+% \subsection{Partially Observable Markov Decision Process (POMDP)}
 
-%% (excerpted from Sung's thesis)
+% %% (excerpted from Sung's thesis)
 
-In this section we briefly introduce generic POMDP formulation.
-For a detailed information, see e.g.,~\cite{Bertsekas05,TBF05,RN10}.
+% In this section we briefly introduce generic POMDP formulation.
+% For a detailed information, see e.g.,~\cite{Bertsekas05,TBF05,RN10}.
 
-Let $\mathbb{S}$, $\mathbb{A}$, and $\mathbb{Z}$ denote the state, action, and observation spaces, respectively.
-We denote the motion model $T(s, a, s') = P(s'\,|\,s, a)$, which defines the probability of being at state $s'$ after taking an action $a$ in state $s$.
-The observation model $Z(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. 
+% Let $\mathbb{S}$, $\mathbb{A}$, and $\mathbb{Z}$ denote the state, action, and observation spaces, respectively.
+% We denote the motion model $T(s, a, s') = P(s'\,|\,s, a)$, which defines the probability of being at state $s'$ after taking an action $a$ in state $s$.
+% The observation model $Z(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. 
 
-A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step.
-Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $b(s)$ as an MDP state, also referred to as a \textit{belief state} $b \in \mathbb{B}$, where $\mathbb{B}$ is referred to as \textit{belief space}.
+% A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step.
+% Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $b(s)$ as an MDP state, also referred to as a \textit{belief state} $b \in \mathbb{B}$, where $\mathbb{B}$ is referred to as \textit{belief space}.
 
-Given $a_{t-1}$, $z_t$, and $b_{t-1}(s)$,
-the updated belief $b_t(s)$ can be computed by Bayesian filtering, which can be divided into two sub-steps as follows.
-\begin{align}
-  b_{t-1}(s; a_{t-1}) &= \sum_{s' \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s),
-  \label{eq:prediction}
-  \\
-  b_t(s; a_{t-1}, z_t) &= \eta Z(s, a_{t-1}, z_t) b_{t-1}(s; a_{t-1}),
-  \label{eq:correction}
-\end{align}
-where $\eta$ is a normalizing constant.
-% For notational convenience, let us denote $b_{t-1}(s; a) = b_{t-1}^a$ and $b_t(s; a, z) = b_t = b_{t-1}^{a z}$ hereafter.
+% Given $a_{t-1}$, $z_t$, and $b_{t-1}(s)$,
+% the updated belief $b_t(s)$ can be computed by Bayesian filtering, which can be divided into two sub-steps as follows.
+% \begin{align}
+%   b_{t-1}(s; a_{t-1}) &= \sum_{s' \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s),
+%   \label{eq:prediction}
+%   \\
+%   b_t(s; a_{t-1}, z_t) &= \eta Z(s, a_{t-1}, z_t) b_{t-1}(s; a_{t-1}),
+%   \label{eq:correction}
+% \end{align}
+% where $\eta$ is a normalizing constant.
+% % For notational convenience, let us denote $b_{t-1}(s; a) = b_{t-1}^a$ and $b_t(s; a, z) = b_t = b_{t-1}^{a z}$ hereafter.
 
-A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$.
-The expected cost of an action for the true state can be represented as a cost function in a belief space, $c(b, a) \in \mathbb{R}^+$.
-Given a policy $\pi$ and a belief $b \in \mathbb{B}$, we can compute the value function,
-\begin{align}
-  J(b; \pi) = \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t c(b_t, \pi(b_t)) \right]\!,
-  \label{eq:trueV}
-\end{align}
-where $b_0$ is the initial belief state and 	$\gamma \in (0, 1]$ is a discount factor that reduces the effect of later costs.
-
-
-We can rewrite Eq.~(\ref{eq:trueV}) in a recursive form, which is called the Bellman equation.
-\begin{align}
-J(b; \pi) = c(b^i, \pi(b)) % \nonumber \\
-   + \gamma \sum_{b' \in \mathbb{B}} \tau(b, \pi(b), b') J(b'; \pi),
-  \label{eq:bellman}
-\end{align}
-where $\tau(b, \pi(b), b') = \sum_{z \in \mathbb{Z}} P(b'|b,\pi(b),z) P(z|b,\pi(b))$ is the transition probability from $b$ to $b'$ under $\pi$,
-which can be derived from Eq.~(\ref{eq:prediction}) and~(\ref{eq:correction}).
-For further details, see~\cite{Ross08}.
-
-It is often convenient to define the so-called Q-value function for an intermediate belief-action pair, $(b, a)$ or simply $b^a$, as follows.
-\begin{align}
-  Q(b^a; \pi) =\; & c(b, a) + \gamma \sum_{b' \in \mathbb{B}} \tau(b, a, b') J(b'; \pi).
-  \label{eq:qfunction}
-\end{align}
-Then Eq.~(\ref{eq:bellman}) can be written as follows.
-\begin{align}
-J(b; \pi) =\; & \min_{a \in \mathbb{A}} Q(b, a; \pi)
-\label{eq:minq}
-\end{align}
-
-We now restate our POMDP problem as an optimization problem.
-\begin{align}
-  \pi^*(b) & = \argmin_{\Pi_{0:\infty}} \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t c(b_t, \pi_t(b_t)) \right]
-  \nonumber \\ 
-  &  = \argmin_{\Pi_{0:\infty}} J(b_t; \pi_t).
-  \label{eq:pomdpopt}
-\end{align}
+% A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$.
+% The expected cost of an action for the true state can be represented as a cost function in a belief space, $c(b, a) \in \mathbb{R}^+$.
+% Given a policy $\pi$ and a belief $b \in \mathbb{B}$, we can compute the value function,
+% \begin{align}
+%   J(b; \pi) = \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t c(b_t, \pi(b_t)) \right]\!,
+%   \label{eq:trueV}
+% \end{align}
+% where $b_0$ is the initial belief state and 	$\gamma \in (0, 1]$ is a discount factor that reduces the effect of later costs.
 
 
-\subsection{Occupancy Grid Mapping}
+% We can rewrite Eq.~(\ref{eq:trueV}) in a recursive form, which is called the Bellman equation.
+% \begin{align}
+% J(b; \pi) = c(b^i, \pi(b)) % \nonumber \\
+%   + \gamma \sum_{b' \in \mathbb{B}} \tau(b, \pi(b), b') J(b'; \pi),
+%   \label{eq:bellman}
+% \end{align}
+% where $\tau(b, \pi(b), b') = \sum_{z \in \mathbb{Z}} P(b'|b,\pi(b),z) P(z|b,\pi(b))$ is the transition probability from $b$ to $b'$ under $\pi$,
+% which can be derived from Eq.~(\ref{eq:prediction}) and~(\ref{eq:correction}).
+% For further details, see~\cite{Ross08}.
 
-An occupancy grid map is a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of its occupancy state \cite{moravec1985high,elfes1990stochastic}.
-%
-Formally, an occupancy grid map is composed of grid cells:
-\begin{align}
-  M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
-\end{align}
-where $\mathbf{m}^i$ is a Bernoulli random variable for the binary occupancy state of the $i$-th cell,
-i.e., $\mathbf{m}^i \in \{occupied, free\}$, and
-$N_M$ is the total number of grid cells in the map.
-The value of $\mathbf{m}^i$ is often assumed to be static over time.
-\note{We can augment further grid cell attributes, such as traversability.}
+% It is often convenient to define the so-called Q-value function for an intermediate belief-action pair, $(b, a)$ or simply $b^a$, as follows.
+% \begin{align}
+%   Q(b^a; \pi) =\; & c(b, a) + \gamma \sum_{b' \in \mathbb{B}} \tau(b, a, b') J(b'; \pi).
+%   \label{eq:qfunction}
+% \end{align}
+% Then Eq.~(\ref{eq:bellman}) can be written as follows.
+% \begin{align}
+% J(b; \pi) =\; & \min_{a \in \mathbb{A}} Q(b, a; \pi)
+% \label{eq:minq}
+% \end{align}
 
-Occupancy grid mapping is to compute the posterior probability of occupancy of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
-\begin{align}
-  p(M | z_{1:t}, x_{1:t}).
-\end{align}
-Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$.
-So, it is often to assume the occupancy grid map to be a Markov random field of order 0 in which the occupancy probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
-With the cell independence assumption, $p(M | z_{1:t}, x_{1:t})$ can be determined from the individual cell state probability, $p(\mathbf{m}^i | z_{1:t}, x_{1:t})$.
-
-Given a sensor model $p(z | \mathbf{m}^i, x)$, this probability can be computed recursively as follows.
-\begin{align}
-  p(\mathbf{m}^i | z_{1:t}, x_{1:t}) =
-  \frac{p(z_t | \mathbf{m}^i, x_{t}) p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1})}
-       {\sum_{\forall j} p(z_t | \mathbf{m}^j, x_{t}) p(\mathbf{m}^j | z_{1:t-1}, x_{1:t-1})}.
-\end{align}
-Note that the sensor model $p(z | \mathbf{m}^i, x)$ can be quite complex as it should consider all possible grid configurations.
-Thus, it is often handled by maximum likelihood estimation or Rao-Blackwellized particle filtering methods \cite{burgard2005coordinated,stachniss2005information}.
-
-Entropy can be used as a measure for the uncertainty of random variables.
-The entropy $H_p(x)$ of a probability distribution $p$ is the expected information, defined as $\mathbb{E}_p[-\log p(x)]$ \cite{cover2012elements}.
-The entropy of the occupancy state of the $i$-th cell can be written as follows.
-\begin{align}
-  H_p(\mathbf{m}^i) = -p_o \log_2 p_{o} - p_f \log_2 p_f,
-\end{align}
-where $p_o = p(\mathbf{m}^i = occupied)$ and $p_f = p(\mathbf{m}^i = free) = 1 - p_o$.
-If a grid cell is unknown for its occupancy with the initial prior of $p_o = p_f = 0.5$, $H_p(\mathbf{m}^i) = 1$, and if it is fully known to be either occupied or free, $H_{p}(\mathbf{m}^i) = 0$.
-%
-Then, under the cell independence assumption, the total entropy of the map $M$ is
-\begin{align}
-  H_p(M) = \textstyle \sum_{i = 1}^N H_{p}(\mathbf{m}^i).
-\end{align}
-
-Now we can introduce information gain $I^i$ obtained from a new observation $z_t$ and its corresponding robot pose $x_t$~\cite{cover2012elements}.
-\begin{align}
-  I^i(\mathbf{m}^i, z_t, x_t) = H_p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1}) - H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}).
-\end{align}
-Similarly, we can compute the \textit{expected} information gain for an action $a_t \in \mathbb{A}$ in the planning phase, by averaging over all possible observations.
-\begin{align}
-  &\hat{I}^i(\mathbf{m}^i; a_t)
-  = \mathbb{E}_{z_{t+1}, x_{t+1}} [ I^i (\mathbf{m}^i, z_{t+1}, x_{t+1}; a_t) ] \nonumber \\
-  &\!\!= H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}) - \mathbb{E}_{z_{t+1}, x_{t+1}} [ H_p (\mathbf{m}^i | z_{1:t+1}, x_{1:t+1}) ].
-\end{align}
-
-The total information gain from a scanning sensor can be computed from local updates as follows
-\cite{bourgault2002information}.
-\begin{align}
-  I(M, z_t, x_t) = \sum_{i \in S_t} I^i(\mathbf{m}^i, z_t, x_t),
-  \label{eq:infogain}
-\end{align}
-where $S_t$ is a set of indices of the grid cells within the region of sensor coverage at time $t$, which would depend on $x_t$.
+% We now restate our POMDP problem as an optimization problem.
+% \begin{align}
+%   \pi^*(b) & = \argmin_{\Pi_{0:\infty}} \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t c(b_t, \pi_t(b_t)) \right]
+%   \nonumber \\ 
+%   &  = \argmin_{\Pi_{0:\infty}} J(b_t; \pi_t).
+%   \label{eq:pomdpopt}
+% \end{align}
 
 
+% \subsection{Occupancy Grid Mapping}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Questions}
-\begin{itemize}
-    \item what is the best map representation (continuous/grid)
-    \item what is the best representation for "occupancy" in the map - is it (free/unknown/occupied) vs risk (0,1)?  also include artifact presence or probability of artifact presence.
-    \item robot pose 3d? yaw?  quaternion?
-    \item information gain - how to interpret in IRM level?  total number of breadcrumbs?
-    \item 
-\end{itemize}
+% An occupancy grid map is a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of its occupancy state \cite{moravec1985high,elfes1990stochastic}.
+% %
+% Formally, an occupancy grid map is composed of grid cells:
+% \begin{align}
+%   M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
+% \end{align}
+% where $\mathbf{m}^i$ is a Bernoulli random variable for the binary occupancy state of the $i$-th cell,
+% i.e., $\mathbf{m}^i \in \{occupied, free\}$, and
+% $N_M$ is the total number of grid cells in the map.
+% The value of $\mathbf{m}^i$ is often assumed to be static over time.
+% \note{We can augment further grid cell attributes, such as traversability.}
 
-\subsection{information gain brainstorming}
-\begin{itemize}
-    \item \# of breadcrumbs
-    \item 2d number of cells
-    \item 3d number voxels
-    \item mesh \# facets, surfaces (observed)
-    \item volume in 3d..
-    \item area of raytrace, area of coverage...
-\end{itemize}
-eventually we want to abstract this into IRM level.  need a happy marriage between high res info with irm abstraction.\\
+% Occupancy grid mapping is to compute the posterior probability of occupancy of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
+% \begin{align}
+%   p(M | z_{1:t}, x_{1:t}).
+% \end{align}
+% Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$.
+% So, it is often to assume the occupancy grid map to be a Markov random field of order 0 in which the occupancy probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
+% With the cell independence assumption, $p(M | z_{1:t}, x_{1:t})$ can be determined from the individual cell state probability, $p(\mathbf{m}^i | z_{1:t}, x_{1:t})$.
 
-\subsection{How to decouple problem}
-\begin{itemize}
-    \item \# new breadcrumbs (current implementation)
-    \item 
-\end{itemize}
+% Given a sensor model $p(z | \mathbf{m}^i, x)$, this probability can be computed recursively as follows.
+% \begin{align}
+%   p(\mathbf{m}^i | z_{1:t}, x_{1:t}) =
+%   \frac{p(z_t | \mathbf{m}^i, x_{t}) p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1})}
+%       {\sum_{\forall j} p(z_t | \mathbf{m}^j, x_{t}) p(\mathbf{m}^j | z_{1:t-1}, x_{1:t-1})}.
+% \end{align}
+% Note that the sensor model $p(z | \mathbf{m}^i, x)$ can be quite complex as it should consider all possible grid configurations.
+% Thus, it is often handled by maximum likelihood estimation or Rao-Blackwellized particle filtering methods \cite{burgard2005coordinated,stachniss2005information}.
+
+% Entropy can be used as a measure for the uncertainty of random variables.
+% The entropy $H_p(x)$ of a probability distribution $p$ is the expected information, defined as $\mathbb{E}_p[-\log p(x)]$ \cite{cover2012elements}.
+% The entropy of the occupancy state of the $i$-th cell can be written as follows.
+% \begin{align}
+%   H_p(\mathbf{m}^i) = -p_o \log_2 p_{o} - p_f \log_2 p_f,
+% \end{align}
+% where $p_o = p(\mathbf{m}^i = occupied)$ and $p_f = p(\mathbf{m}^i = free) = 1 - p_o$.
+% If a grid cell is unknown for its occupancy with the initial prior of $p_o = p_f = 0.5$, $H_p(\mathbf{m}^i) = 1$, and if it is fully known to be either occupied or free, $H_{p}(\mathbf{m}^i) = 0$.
+% %
+% Then, under the cell independence assumption, the total entropy of the map $M$ is
+% \begin{align}
+%   H_p(M) = \textstyle \sum_{i = 1}^N H_{p}(\mathbf{m}^i).
+% \end{align}
+
+% Now we can introduce information gain $I^i$ obtained from a new observation $z_t$ and its corresponding robot pose $x_t$~\cite{cover2012elements}.
+% \begin{align}
+%   I^i(\mathbf{m}^i, z_t, x_t) = H_p(\mathbf{m}^i | z_{1:t-1}, x_{1:t-1}) - H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}).
+% \end{align}
+% Similarly, we can compute the \textit{expected} information gain for an action $a_t \in \mathbb{A}$ in the planning phase, by averaging over all possible observations.
+% \begin{align}
+%   &\hat{I}^i(\mathbf{m}^i; a_t)
+%   = \mathbb{E}_{z_{t+1}, x_{t+1}} [ I^i (\mathbf{m}^i, z_{t+1}, x_{t+1}; a_t) ] \nonumber \\
+%   &\!\!= H_p(\mathbf{m}^i | z_{1:t}, x_{1:t}) - \mathbb{E}_{z_{t+1}, x_{t+1}} [ H_p (\mathbf{m}^i | z_{1:t+1}, x_{1:t+1}) ].
+% \end{align}
+
+% The total information gain from a scanning sensor can be computed from local updates as follows
+% \cite{bourgault2002information}.
+% \begin{align}
+%   I(M, z_t, x_t) = \sum_{i \in S_t} I^i(\mathbf{m}^i, z_t, x_t),
+%   \label{eq:infogain}
+% \end{align}
+% where $S_t$ is a set of indices of the grid cells within the region of sensor coverage at time $t$, which would depend on $x_t$.
+
+
+% \subsection{EXTRA}
+% \begin{align}
+%   J(b;\pi) &= \mathbb{E} \left[ \sum_{t=0}^\infty \gamma^t I(b_t; \pi_t(b_t)) \right], \label{eq:artifactopt_cost}\\
+%   \pi^*(b) & = \argmax_{\Pi} J(b;\pi), \label{eq:artifactopt}\\
+%   J^*(b) &= \max_{\Pi} J(b;\pi) , \label{eq:artifactopt_value}
+% \end{align}
+
+% % \note{Here, we do not explicitly include the localization accuracy in the objective function, unlike some of SLAM formulations. If anyone has a good idea how to describe this, please feel free to contribute.}
+
+% where $J(b;\pi)$ is the value function and $J^*(b)$ is the optimal value function.  Traditionally, this problem can be solved at each timestep using a dynamic programming approach, which decomposes the maximization over an infinite number of timesteps to a maximization over one timestep at a time.  We can rewrite Eq.~(\ref{eq:artifactopt_value}) in a recursive form, which is called the optimal Bellman equation.
+% \begin{align}
+% J^*(b) = \max_{\Pi} \left[I(b, \pi(b)) % \nonumber \\
+%   + \gamma \sum_{b' \in \mathbb{B}} \tau(b, \pi(b), b') J^*(b')\right],
+%   \label{eq:bellman_opt}
+% \end{align}
+% where $\tau(b, \pi(b), b') = \sum_{z \in \mathbb{Z}} P(b'|b,\pi(b),z) P(z|b,\pi(b))$ is the transition probability from $b$ to $b'$ under $\pi$,
+% which can be derived from Eq.~(\ref{eq:prediction}) and~(\ref{eq:correction}) (For further details, see~\cite{Ross08}).  At each timestep we have the optimal policy in terms of the optimal value $J^*$:
+% \begin{align}
+% \pi^*(b) = \argmax_{\Pi} \left[I(b, \pi(b)) % \nonumber \\
+%   + \gamma \sum_{b' \in \mathbb{B}} \tau(b, \pi(b), b') J^*(b')\right].
+%   \label{eq:bellman_opt_policy}
+% \end{align}
+
+% The maximization is over one transition from $b$ to $b'$ rather than the entire infinite horizon, as long as we have an accurate $J^*$. For smaller problems, finding $J^*$ may be feasible via Monte-Carlo search or other exhaustive methods \todo{cite}.  
+
+% To obtain a tractable... we discretize the belief $b=p(M,x)$.  In the next section we discretize the map $M$ with an occupancy grid map, and later we discuss discretizing $x\in\mathcal{S}$ by sampling, which we call Information Roadmap (IRM)...
+
+% \subsection{EXTRA from Information Roadmap Planner}
+
+% We restrict $\Pi$ to the set of policies defined by:
+% \begin{align}
+%     \Pi \triangleq \{\pi:V\rightarrow\mathbb{A}^\tau | \pi = \pi^M(\pi^g(v)),v\in V\}
+% \end{align}
+% where $\pi^g(v):V\rightarrow V$ \todo{extend to parameter} is a node-to-node graph policy within a class of node-to-node policies $\Pi^g$, and $\pi^M(v):V\rightarrow \mathbb{A}^\tau$ is local planner policy.  
+
+% $\pi(v_i):V\rightarrow \mathbb{A}^\tau$ within a class of policies $\Pi$ which produces a sequence of map-level actions $\{a_t\}_{t=0}^\tau, a_t\in\mathbb{A}\forall t$.
+% \begin{align}
+%     \pi: b\rightarrow a\\
+%     \pi(b,v) = \pi^M(b; \pi^g(v))
+% \end{align}
+% \todo{change output of graph-level policy to be another policy, also change to lowercase}
+% We define a integrated/holistic-level policy $\pi(v_i):V\rightarrow \mathbb{A}^\tau$ within a class of policies $\Pi$ which produces a sequence of map-level actions $\{a_t\}_{t=0}^\tau, a_t\in\mathbb{A}\forall t$.  
+% (In abuse of notation , $\tau$ can change.)  
+
+% We restrict $\Pi$ to the set of policies defined by:
+% \begin{align}
+%     \Pi \triangleq \{\pi:V\rightarrow\mathbb{A}^\tau | \pi = \pi^M(\pi^g(v)),v\in V\}
+% \end{align}
+% where $\pi^g(v):V\rightarrow V$ \todo{extend to parameter} is a node-to-node graph policy within a class of node-to-node policies $\Pi^g$, and $\pi^M(v):V\rightarrow \mathbb{A}^\tau$ is local planner policy.  
+% The target node $v_j$ is sent to the local planner policy.  
+
+% \ph{Graph expansion information reward}
+% We define the information gain from reaching a node $v_j$ as:
+% \begin{align}
+%     % I^G(v_i,v_j) = \sum_{s\in e_{ij}} I(s,\pi^M(s)) \\
+%     I^V(v_j) = I^{future}(v_j)
+% \end{align}
+% where $I^{future}(v_j)$ is the expected future information gain which results from future actions after reaching the node, resulting from potential future information gain which results from potentially adding new nodes to the graph upon reaching that node.
+
+% %\todo{information gain vs expected information - make sure this is consistent with background info}
+
+% \ph{Graph action (total) reward}
+% This is the total reward for having reached node $v_i$, then executing a single graph traversal action $\pi^G(v_i)$:
+% \begin{multline}
+%     I^G(v_{i}, \pi^G(v_{i})) = I^E(v_{i}, \pi^G(v_{i})) + \\
+%     I^V(v_i) - \alpha c^E(v_i,\pi^G(v_i)) 
+% \end{multline}
+% \begin{multline}
+%     R^G(v_{i}, \pi^G(v_{i})) = I^E(v_{i}, \pi^G(v_{i}))
+%     - \alpha c^E(v_i,\pi^G(v_i)) 
+% \end{multline}
+% where $\alpha$ is some constant which trades off information gain with the cost of traversal.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Conclusion}
+
+
+% \todo{Exponential rather than summed reward function? See [Navigation Strategies for Exploring Indoor Environments, H. H. Gonzalez-Banos and J.-C. Latombe, 2002], [Visual Saliency–aware Receding Horizon Autonomous Exploration with Application to Aerial Robotics, Tung Dang, Christos Papachristos, Kostas Alexis, 2018], [Receding Horizon “Next–Best–View” Planner for 3D Exploration, Andreas Bircher, Mina Kamel , Kostas Alexis , Helen Oleynikova, and Roland Siegwart, 2016]}
+
+%\todo{information gain vs expected information - make sure this is consistent with background info}
+
+% \ph{Graph action (total) reward}
+% This is the total reward for having reached node $v_i$, then executing a single graph traversal action $\pi^G(v_i)$:
+% \begin{multline}
+%     I^G(v_{i}, \pi^G(v_{i})) = I^E(v_{i}, \pi^G(v_{i})) + \\
+%     I^V(v_i) - \alpha c^E(v_i,\pi^G(v_i)) 
+% \end{multline}
+% \begin{multline}
+%     R^G(v_{i}, \pi^G(v_{i})) = I^E(v_{i}, \pi^G(v_{i}))
+%     - \alpha c^E(v_i,\pi^G(v_i)) 
+% \end{multline}
+% where $\alpha$ is some constant which trades off information gain with the cost of traversal.
+
+% \ph{Graph Cost-to-go (Utility Function)}
+% We define the cost-to-go as the sum of future expected information gain on the graph:
+% \begin{align}
+%   J^G(v_{0};\pi^G) &= \mathbb{E} \left[ \sum_{k=0}^\infty R^G(v_{k}, \pi^G(v_{k}))\right], \label{eq:artifactopt_cost}
+% \end{align}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Questions}
+% \begin{itemize}
+%     \item what is the best map representation (continuous/grid)
+%     \item what is the best representation for "occupancy" in the map - is it (free/unknown/occupied) vs risk (0,1)?  also include artifact presence or probability of artifact presence.
+%     \item robot pose 3d? yaw?  quaternion?
+%     \item information gain - how to interpret in IRM level?  total number of breadcrumbs?
+%     \item 
+% \end{itemize}
+
+% \subsection{information gain brainstorming}
+% \begin{itemize}
+%     \item \# of breadcrumbs
+%     \item 2d number of cells
+%     \item 3d number voxels
+%     \item mesh \# facets, surfaces (observed)
+%     \item volume in 3d..
+%     \item area of raytrace, area of coverage...
+% \end{itemize}
+% eventually we want to abstract this into IRM level.  need a happy marriage between high res info with irm abstraction.\\
+
+% \subsection{How to decouple problem}
+% \begin{itemize}
+%     \item \# new breadcrumbs (current implementation)
+%     \item 
+% \end{itemize}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \section{High-level instructions}
@@ -693,51 +1647,51 @@ eventually we want to abstract this into IRM level.  need a happy marriage betwe
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\clearpage{}
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.5\textwidth]{figures/whiteboard1.jpg}
-  \label{fig:whiteboard1}
-\end{figure}
+% \clearpage{}
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.5\textwidth]{figures/whiteboard1.jpg}
+%   \label{fig:whiteboard1}
+% \end{figure}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.5\textwidth]{figures/whiteboard2.jpg}
-  \label{fig:whiteboard1}
-\end{figure}
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.5\textwidth]{figures/whiteboard2.jpg}
+%   \label{fig:whiteboard1}
+% \end{figure}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.5\textwidth]{figures/whiteboard3.jpg}
-  \label{fig:whiteboard1}
-\end{figure}
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.5\textwidth]{figures/whiteboard3.jpg}
+%   \label{fig:whiteboard1}
+% \end{figure}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.5\textwidth]{figures/whiteboard4.jpg}
-  \label{fig:whiteboard1}
-\end{figure}
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.5\textwidth]{figures/whiteboard4.jpg}
+%   \label{fig:whiteboard1}
+% \end{figure}
 
-\clearpage
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\textwidth]{figures/whiteboardA.jpg}
-  \includegraphics[width=.9\textwidth]{figures/whiteboardB.jpg}
-\end{figure}
-\clearpage
+% \clearpage
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.9\textwidth]{figures/whiteboardA.jpg}
+%   \includegraphics[width=.9\textwidth]{figures/whiteboardB.jpg}
+% \end{figure}
+% \clearpage
 
-\clearpage
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\textwidth]{figures/whiteboardI.jpg}
-\end{figure}
-\clearpage
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\textwidth]{figures/whiteboardII.jpg}
-  \includegraphics[width=.9\textwidth]{figures/whiteboardIII.jpg}
-\end{figure}
-\clearpage
+% \clearpage
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.9\textwidth]{figures/whiteboardI.jpg}
+% \end{figure}
+% \clearpage
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=.9\textwidth]{figures/whiteboardII.jpg}
+%   \includegraphics[width=.9\textwidth]{figures/whiteboardIII.jpg}
+% \end{figure}
+% \clearpage
 
 
 \end{document}
