@@ -1,7 +1,13 @@
-\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+\documentclass{article}
 
-\IEEEoverridecommandlockouts                             
-\overrideIEEEmargins
+\usepackage{corl_2020} % Use this for the initial submission.
+% \usepackage[final]{corl_2020} % Uncomment for the camera-ready ``final'' version.
+
+% IEEE
+% \documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+%
+% \IEEEoverridecommandlockouts                             
+% \overrideIEEEmargins
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -9,6 +15,7 @@
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage[normalem]{ulem}
+\usepackage{subfig}
 
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -23,24 +30,90 @@
 \newcommand{\todo}[1]{{\color{red} #1 }} % Tasks to do
 \newcommand{\note}[1]{{\color{cyan} NOTE: #1 }}
 \newcommand{\hn}[1]{{\color{orange} NOTE: (Henry) #1 }}
+\newcommand{\gautam}[1]{{\color{cyan}Gautam: #1 }}
 \newcommand{\argmax}{\mathop{\mathrm{argmax}}}
 \newcommand{\argmin}{\mathop{\mathrm{argmin}}}
 
+% IEEE
+% \title{\LARGE \bf
+% Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in Extreme Environments
+% }
 
-\title{\LARGE \bf
+\title{
 Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in Extreme Environments
 }
 
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+% NOTE: authors will be visible only in the camera-ready (ie, when using the option 'final'). 
+% 	For the initial submission the authors will be anonymized.
+
+\author{
+  Sung-Kyun Kim*\\
+  NASA Jet Propulsion Laboratory\\
+  California Institute of California\\
+  United States\\
+  \texttt{sung.kim@jpl.nasa.gov} \\
+  \And
+  Amanda Bouman*\\
+  Department of Mechanical and Civil Engineering\\
+  California Institute of California\\
+  United States\\
+  \texttt{abouman@caltech.edu} \\
+  \And
+  Gautam Salhotra\\
+  Department of Computer Science\\
+  University of Southern California\\
+  United States\\
+  \texttt{salhotra@usc.edu} \\
+  \And
+  David D. Fan\\
+  NASA Jet Propulsion Laboratory\\
+  California Institute of California\\
+  United States\\
+  \texttt{david.d.fan@jpl.nasa.gov} \\
+  \And
+  Kyohei Otsu\\
+  NASA Jet Propulsion Laboratory\\
+  California Institute of California\\
+  United States\\
+  \texttt{kyohei.otsu@jpl.nasa.gov} \\
+  \And
+  Joel Burdick\\
+  Department of Mechanical and Civil Engineering\\
+  California Institute of California\\
+  United States\\
+  \texttt{jwb@robotics.caltech.edu} \\
+  \And
+  Ali-akbar Agha-mohammadi\\
+  NASA Jet Propulsion Laboratory\\
+  California Institute of California\\
+  United States\\
+  \texttt{aliagha@jpl.nasa.gov} \\
+}
 
 \begin{document}
 \maketitle
-% \thispagestyle{empty}
-% \pagestyle{empty}
-\pagestyle{plain}
+
+% IEEE
+% % \thispagestyle{empty}
+% % \pagestyle{empty}
+% \pagestyle{plain}
 
 \begin{abstract}
-In order for robots to achieve a useful level of autonomy in novel environments, they must take into account uncertainties in localization, sensor measurements, and unknown hazards, as well as the effect of its own actions on these uncertainties.  Although there are many general methods for planning under uncertainty, we are interested in problems with very large scales, both in space (>10km$^2$) and in time (> 1 hour).  To make matters worse, we require computational efficiency and the ability to handle time constraints without severely impacting the optimality of the solution.  Towards this end we propose a unified framework for belief space planning that bridges the gap between high-fidelity information and traversability analyses and macro-level, discrete behavior planning.  We take samples of the belief space in order to construct a graph structure that encodes mission and environment-related information, which we call an Information Roadmap (IRM).  We demonstrate our framework in team CoSTAR's participation in the DARPA Subterranean Challenge, in which teams compete to autonomously search for artifacts in large, unknown, GPS-denied environments. 
+In order for robots to achieve a useful level of autonomy in novel environments, they must take into account uncertainties in localization, sensor measurements, and unknown hazards, as well as the effect of its own actions on these uncertainties.  Although there are many general methods for planning under uncertainty, we are interested in problems with very large scales, both in space (>10km$^2$) and in time (> 1 hour).  To make matters worse, we require computational efficiency and the ability to handle time constraints without severely impacting the optimality of the solution.  Towards this end we propose a unified framework for belief space planning that bridges the gap between high-fidelity information and traversability analyses and macro-level, discrete behavior planning.  We take samples of the belief space in order to construct a graph structure that encodes mission and environment-related information, which we call an Information Roadmap (IRM).  We demonstrate our framework in team CoSTAR's participation in the DARPA Subterranean Challenge, in which teams compete to autonomously search for artifacts in large, unknown, GPS-denied environments.
 \end{abstract}
+
+% Two or three meaningful keywords should be added here
+\keywords{CoRL, Robots, Learning} 
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,7 +142,162 @@ In order for robots to achieve a useful level of autonomy in novel environments,
 % }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Abstract
+Introduction
+Related work
+Problem description/formulation
+-Coverage planning (SubT)
+-POMDP
+Overall solution framework
+-Global/local IRM
+-Hierarchical planning
+Algorithm description
+-POMCP-based coverage planning
+Experimental results
+-Simulation
+-Robot experiments
+Conclusion
+Appendix
+
+
+
+INTRODUCTION
+
+coverage planning applications/significance
+
+highlight
+RL-based
+POMCP-based
+
+Our approach
+IRM structure for coverage planning
+-abstract graph/grid structure algorithm is agnostic to environment representation
+Using high-confidence generative model <--> risk map/traversability
+
+
+RELATED WORK
+
+Larger-space exploration
+: (Gautam) RL-based approaches
+-> limitations
+: (Amanda) TSP
+
+
+(Sung) POMDP solvers; purely model-based (given explicit/mathematical model)
+-> POMCP -> Model-based RL
+-> Challenge: even the generative model is not given!
+
+
+(David/Kyon)
+Traversability/riskmap --> model
+High-confidence gen model
+Traversabilty-aware ...
+
+
+
+SYSTEM DIAGRAM / Overall framework (Sung)
+
+
+
+
+STOCHASTICITY
+
+motion model: deterministic
+sensor model: 0/1 approximation (very simplified model)
+-noise; uncertainty; no information; 0 if out of FOV; out-of-FOV is fully stochastic (no information)
+
+partial observability (limited FOV)
+-> dependency on history
+-> POMDP
+
+
+TSP
+
+
+Reward function depends on history
+
+
+
+
+POMCP requires GT gen model.
+How to POMCP without GT gen model?
+-> need to estimate/construct *gen model* over time
+-> *gen model* needs motion model (occupancy/risk) and reward function (coverage, occupancy)
+-> construct *gen model* from riskmap and pose_graph
+
+Use of uncertainty of motion model and reward function estimator?
+: motion and sensor model are deterministically approximated
+: we use uncertainty in reward function
+
+
+
+\ph{Sources of uncertainty} - Problem Description (Amanda)
+\begin{enumerate}
+    % given lcoal IRM as GT, uncertainty in POMDP problem
+    \item (within our prob formulation) Partial observation of local IRM (within FOV): uncertainty of complete state of IRM
+    -> coverage during forward simulation -> reward function
+    \item (we use this uncertainty as 0/1 model)
+    
+    \item Actuator noise/uncertainty AKA controller errors
+    \item (we don't model this uncertainty for outcome state of gen, i.e., s')
+    \item (we use this uncertainty in reward/cost function)
+    
+    % initial IRM generation, and generative model
+    \item Environment sensor uncertainty (main)
+    \item \ \ Coverage: if dist < 5m from pose_graph, then P(cov) = 1, otherwise P(cov) = 0 (sub)
+    \item \ \ Occupancy: based on lidar sensor reading, ... (complex process of traversability analysis)
+    \item (we model this uncertainty as 0/1 model)
+    
+    \item (NOTE: we do not assume localization error (robot pose))
+\end{enumerate}
+=> Described these simplified modeling in experimental section
+
+
+It is not fundamentally impossible to do incremental planning?
+-> Fusion/accumulated/aggregated belief update for gen model construction? 
+-> keep track of riskmap(1:t) and pose_graph(1:t) -> gen_model at time t+1
+--> [FUTURE WORK] spatio-temporal memory of local IRM
+    REPRESENTATIONAL BENEFIT; placeholder of enriched information
+=> Receding horizon control over stitched local IRM at (t-1) and (t)
+-> maybe a general problem for RHC approaches for exceptions!
+
+
+mathematical formulation
+
+$V(b) = ...$ (with GT gen)
+$\hat{V}(b) = \mathbb{E}_\theta ...$ (with estimated gen with prior $\theta$)
+
+
+
+algorithm description (Gautam)
+
+1. Hierarchical planning
+
+
+
+2. High-confidence...? gen model
+
+
+3. Coverage planning
+Custom rollout
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
+
+
+
+
+
+
+
+
+
 \ph{High-level mission} Consider a robot tasked to explore and search a GPS-denied environment, under given time constraints. Creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements are essential elements of an autonomy architecture needed to realize such a mission.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
 
 \ph{An illustrative example} Consider the situation where a robot explores a corridor with two doorways leading to unknown areas.  The first doorway is narrow, but leads to a large, unexplored area, away from areas the robot has already explored.  The second doorway is wider and leads to what the robot can sense from a long range is a small room.  In order for the robot to make a good decision about which door to explore, it needs to take into account the uncertainty of its knowledge of each doorway, the risk involved in traversal, the time it takes to traverse, and the expected new information the robot hopes to gain in the future.  Furthermore, the robot should plan beyond the horizon of its current sensing range, and decide on the order in which to explore the doorways.  The robot will also need to update its plan at a high frequency should the situation change (e.g. due to dynamic obstacles, changing mission constraints, time limits, etc.) (see Figure \ref{fig:firstPage}).
@@ -107,7 +335,41 @@ In the next section, we present the problem formulation. In Section \ref{sec:gri
 %\section{Related Work}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Problem Formulation}
+\section{Problem Description}
+
+Given the current belief, the robot finds the best action, executes that action, and updates its belief. POMCP can handle POMDPs with a large number of states.
+
+Incorporate map occupancy and coverage.
+
+Reactive control? doesn't require sophisticated predicative model and ignore uncertainty.
+
+We reason about uncertainties - vehicle control and sensing uncertainties into decision making
+
+Tool for robot planning under uncertainty
+
+
+
+\ph{Sources of uncertainty} - Problem Description (Amanda)
+\begin{enumerate}
+    % given lcoal IRM as GT, uncertainty in POMDP problem
+    \item (within our prob formulation) Partial observation of local IRM (within FOV): uncertainty of complete state of IRM
+    -> coverage during forward simulation -> reward function
+    \item (we use this uncertainty as 0/1 model)
+    
+    \item Actuator noise/uncertainty AKA controller errors
+    \item (we don't model this uncertainty for outcome state of gen, i.e., s')
+    \item (we use this uncertainty in reward/cost function)
+    
+    % initial IRM generation, and generative model
+    \item Environment sensor uncertainty (main)
+    \item \ \ Coverage: if dist < 5m from pose_graph, then P(cov) = 1, otherwise P(cov) = 0 (sub)
+    \item \ \ Occupancy: based on lidar sensor reading, ... (complex process of traversability analysis)
+    \item (we model this uncertainty as 0/1 model)
+    
+    \item (NOTE: we do not assume localization error (robot pose))
+\end{enumerate}
+=> Described these simplified modeling in experimental section
+
 In this section, we formalize the high-level problem of time-constrained autonomous exploration and search problem.
 %for DARPA Subterranean (SubT) Challenge.
 %At a high level, the objective is to \textit{detect} and \textit{localize} the artifact objects in an unknown environment as many as possible for the given time.
@@ -187,7 +449,7 @@ Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $
 \end{align}
 
 \ph{Computational challenges}
-The problem in Eq. (\ref{eq:MDP-belief}) is intractable because of 1) the high dimension of the belief $b$, particularly with respect to the belief over the map $M$, and 2) the large timescales $L$, since the complexity of the search space grows exponentially with time.  To obtain a tractable solution we discretize both the belief space $b=p(M,x)$ as well as time scale.  In Section \ref{sec:representation} we discuss discretizing the map portion of the belief $M$, and in Section \ref{sec:planning} we discuss how we discretize the policy space and timescales to obtain a tractable planning problem.
+The problem in Eq. (\ref{eq:MDP-belief}) is intractable because of 1) the high dimension of the belief $b$, particularly with respect to the belief over the map $M$, and 2) the large timescales $L$, since the complexity of the search space grows exponentially with time.  To obtain a tractable solution we discretize both the belief space $b=p(M,x)$ as well as time scale.  In Section \ref{sec:grid_representation} we discuss discretizing the map portion of the belief $M$, and in Section \ref{sec:planning} we discuss how we discretize the policy space and timescales to obtain a tractable planning problem.
 
 %\todo{transition to adding map, belief, information definitions}
 %\todo{add nice gentle figure which describes general approach (no math)}
@@ -208,7 +470,7 @@ The value of $\mathbf{m}^i$ is often assumed to be static over time.
 
 \ph{Map belief} The goal of belief grid mapping is to compute the posterior probability of the state of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
 \begin{align}
-  p(M | z_{1:t}, x_{1:t}).
+  p(M | z_{1:t}, x_{1:t}),
 \end{align}
 Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$.
 So, it is often to assume the belief grid map to be a Markov random field of order 0 in which the belief probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
@@ -277,7 +539,7 @@ where $S_t$ is a set of indices of the grid cells within the region of sensor co
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\section{Planner architecture}
 \section{Information Roadmap Planning}\label{sec:planning}
-To convert the Equation (\ref{eq:MDP-belief}) to a computationally tractable planning problem, we sample the robot pose space and reduce it to a representative graph. 
+To convert the Eq.~(\ref{eq:MDP-belief}) to a computationally tractable planning problem, we sample the robot pose space and reduce it to a representative graph. 
 
 %\section{Hierarchical Information-based Planner (HIP) Framework}
 %\section{Hierarchical Information-based Planning Framework for Large-scale Exploration}
@@ -296,26 +558,26 @@ To convert the Equation (\ref{eq:MDP-belief}) to a computationally tractable pla
 % \end{figure*}
 
 \ph{Graph Definition}
-We employ a sparse graph structure $G = (V, E)$ captures the connectivity of the free space in the environment.  We refer to this graph as the IRM (information roadmap) as its nodes ($V$) and edges ($E$) are enriched by various environmental and robot-related properties.  In general, we consider a graph of sampled beliefs, i.e. where $V=\{v|v\in\mathbb{B}\}$ and edges $E$ are a set of actions and measurements the robot can take to transition between two belief nodes. Constructing a graph which densely samples the full beliefs space suffers from the curse of dimensionality and may be intractable.  Instead, we incrementally sample the belief space \textit{locally}.  We grow the IRM graph as the robot explores, creating new nodes, both leaf nodes and internal nodes.  We distinguish between two types of nodes:  breadcrumb nodes and frontier nodes.  Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversible space where the robot has explored already, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$ (See Figure \ref{fig:irm_large}).
+We employ a sparse graph structure $G = (V, E)$ captures the connectivity of the free space in the environment.  We refer to this graph as the IRM (information roadmap) as its nodes ($V$) and edges ($E$) are enriched by various environmental and robot-related properties.  In general, we consider a graph of sampled beliefs, i.e. where $V=\{v|v\in\mathbb{B}\}$ and edges $E$ are a set of actions and measurements the robot can take to transition between two belief nodes. Constructing a graph which densely samples the full beliefs space suffers from the curse of dimensionality and may be intractable.  Instead, we incrementally sample the belief space \textit{locally}.  We grow the IRM graph as the robot explores, creating new nodes, both leaf nodes and internal nodes.  We distinguish between two types of nodes:  breadcrumb nodes and frontier nodes.  Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversible space where the robot has explored already, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$ (see Figure \ref{fig:irm_large}).
 
 \ph{Belief graph notation}
-For ease of notation we make the following definitions.  For a given node $v_i$ with belief $b_i = p(M,x)$, we say the node is \textit{centered at} a location $x^i\in\mathbb{X}$ when $p(d(x,x^i)>r_x)<\epsilon$, for some distance metric $d(\cdot,\cdot)$, \textit{breadcrumb radius} $r_x>0$, and probability threshold $\epsilon\in(0,1]$.  Similarly, we consider a robot with belief $b_t$ to be \textit{at} a node $v_i$ when $p(d(x,x^i)>r_x)<\epsilon$.  Finally, we assume that the IRM contains the latest belief of the map $M_t$ at each node, i.e. $v_i=p(M_t,x^i)\forall t$.  We can therefore use the notation $v_i$ to denote the location the node is centered at $x^i$, since we assume the map belief at each node is the most recent belief.
+For ease of notation we make the following definitions.  For a given node $v_i$ with belief $b_i = p(M,x)$, we say the node is \textit{centered at} a location $x^i\in\mathbb{X}$ when $p(d(x,x^i)>r_x)<\epsilon$, for some distance metric $d(\cdot,\cdot)$, \textit{breadcrumb radius} $r_x>0$, and probability threshold $\epsilon\in(0,1]$.  Similarly, we consider a robot with belief $b_t$ to be \textit{at} a node $v_i$ when $p(d(x,x^i)>r_x)<\epsilon$.  Finally, we assume that the IRM contains the latest belief of the map $M_t$ at each node, i.e. $v_i=p(M_t,x^i),\,\forall t$.  We can therefore use the notation $v_i$ to denote the location the node is centered at $x^i$, since we assume the map belief at each node is the most recent belief.
 
 \begin{figure}[ht!]
   \includegraphics[width=.48\textwidth]{figures/irm.png}
-  \label{fig:irm_large}
   \caption{Information Roadmap consisting of breadcrumbs and frontiers for belief-space planning over large environments and timescales.}
+  \label{fig:irm_large}
 \end{figure}
 
 \begin{figure}[ht!]
   \includegraphics[width=.48\textwidth]{figures/irm_breadcrumbs_frontiers.png}
-  \label{fig:breadcrumbs_frontiers}
   \caption{Breadcrumbs (black dots) denote explored regions and help to define to connectivity of free space.  The yellow circle denotes the sensing range.  Yellow dots are new frontier nodes, which encode locations of high potential for information gain.  This potential can be evaluated through rollouts of simulated additional frontier nodes (dotted circles).  In this work we employ an information gain heuristic to approximate these rollouts, as a function of uniquely unexplored territory (area between dashed green lines).}
+  \label{fig:breadcrumbs_frontiers}
 \end{figure}
 
 \ph{Breadcrumb nodes}
 % We refer to leaf nodes as frontiers $f\in F\subset V$ and internal nodes as breadcrumbs $b\in B \subset V$ with $F\cup B = V$.  New internal nodes capture the connectivity of free space to allow for efficient future traversal. 
-Breadcrumb nodes $b\in B \subset V$ are nodes centered at locations where \textit{no changes to the map belief will occur}.  This means that we consider breadcrumb nodes to be locations where the map is fully explored.  Note that this does not require the exact location to have been visited before.  (See Figure \ref{fig:breadcrumbs_frontiers}). 
+Breadcrumb nodes $b\in B \subset V$ are nodes centered at locations where \textit{no changes to the map belief will occur}.  This means that we consider breadcrumb nodes to be locations where the map is fully explored.  Note that this does not require the exact location to have been visited before (see Figure \ref{fig:breadcrumbs_frontiers}). 
 
 \ph{Frontier nodes (1-step lookahead)}
 We define a frontier node $f\in F\subset V$ as a node centered at a location where we expect to see changes to the map belief.  We can generate these frontiers by applying a look-ahead policy (a rollout).  This rollout simulates how the graph will grow by taking multiple actions into the future, and can be constructed using simulations derived from models of the environment, heuristics, etc.  For the frontier $f$ with planning depths $k$, we can write the belief of the frontier to be $b_{f,k} = p(M_k, x_k = x_f)$.
@@ -365,47 +627,10 @@ In this work, we because we assume that we have limited sensing range in a compl
 % \end{figure}
 
 
-% \subsubsection{Frontier detection/pruning}
-
-% Frontier nodes on the IRM are generated and deleted by a repeated process while the robots are exploring.
-
-\ph{Frontier detection}
-\begin{enumerate}
-\item Frontier cell detection: 
-Frontier cell detection is based on Fast Frontier Detection algorithm \cite{keidar2012robot} (see Fig.~\ref{fig:frontiering}).
-From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green) that connect all the end-points in a sequential order.
-Then we detect frontier cells (green) that are adjacent to unknown cells.
-\item Frontier node sampling: 
-A frontier node sampled from the detected frontier cells (pink square) as an approximation of the frontier cells.
-We determine the frontier node position by computing the centroid of the frontier cells.
-If the centroid is not known free space, we project it to the nearest frontier cell as an alternative. 
-\item Frontier node filtering: 
-In order to prevent having duplicate frontier nodes on the IRM, we filter out newly frontiers if they are closer to existing frontier nodes than a threshold.
-Additionally, we exclude new frontier nodes if they are near to the pose graph nodes that are generated by other robots.
-This is to ensure that new frontiers are not generated where any other robots have explored already.
-\item Registration of frontier nodes: 
-Finally, we add the new frontiers to the IRM.
-They are connected to the breadcrumb that is closest to the current robot position to encode the visibility for the frontier nodes on the IRM.
-We save the relative position to the underlying pose graph node, so that we can keep the same topological structure after loop closure events.
-\end{enumerate}
-
-\ph{Frontier pruning}
-\begin{enumerate}
-\item Frontier cell pruning: 
-We run raycasting from the current robot pose and update the occupancy state of the local occupancy grid map.
-If a frontier cell is no longer adjacent to unknown cells, we prune the frontier cell.
-\item Removal of frontier nodes: 
-After pruning all frontier cells on the local occupancy grid map, we check if any frontier node have only a few remaining frontier cells associated with it.
-If it is so, we prune the frontier node from the IRM. 
-\end{enumerate}
-
-\begin{figure}[ht!]
-  \centering
-  \includegraphics[trim={7cm 9cm 10cm 5cm},clip,width=.48\textwidth]{figures/frontier_detection.png}
-  \caption{Illustration of frontier detection process.
-    From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green), and detect frontier cells (green) that are adjacent to unknown cells. Then, we sample frontier nodes (pink squares) from the frontier cells.}
-  \label{fig:frontiering}
-\end{figure}
+\ph{Frontier detection and pruning}
+The frontier detection/pruning process in our framework serves as an encoder of the mapping information to a graph level.
+From the local occupancy grid map, it keeps track of the border of the known free and unknown spaces, so-called \textit{frontiers}, and updates the frontier nodes on the IRM accordingly.
+This enables the IRM to effectively capture the information of the coverage of the whole environment, while keeping its simple representation structure.
 
 
 \ph{Graph policy}
@@ -509,14 +734,14 @@ We wish to find the optimal graph level policy $\pi^g_{k:K}$ over timesteps $k$ 
 % \noindent where $\hat{J}^{g}(v_j)$ is the expected graph value for frontier nodes, as detailed below. 
 
 
-\ph{Graph planner - Belief Tree Search}
+\ph{Graph planner - belief tree search}
 Now we describe how we can solve Eq.~(\ref{eq:graphoptprob}).
 Since $J^g(v_i,k; \pi^g)$ depends on the \textit{sequence} of actions as defined in Eq.~(\ref{eq:graphvaluefn}), we cannot use a simple value iteration on the IRM (as in the MDP setting), which accepts the Bellman update in any arbitrary order.
 Instead, we need to construct a tree structure, called a \textit{belief tree}, rooted at the current given node $v_i$ at timestep $k$, and growing until reaching a leaf node or the finite horizon.
 % \note{When thinking of probabilistic occupancy state estimation (i.e., we may not get rid of occupancy state uncertainty by a single visit), then we may end up having an infinite-horizon belief tree. So, we should not say we can solve for infinite horizons even with i) or ii) scheme.}
 %
 This tree structure will unroll the graph with possible loops, and encodes the dependency on the history
-(e.g., revisiting a leaf node multiple times will not provide a multiple of the leaf node's original information gain, see Figure \ref{fig:search_tree}).
+(e.g., revisiting a leaf node multiple times will not provide a multiple of the leaf node's original information gain).
 
 % \begin{figure}[ht!]
 %   \includegraphics[width=.48\textwidth]{figures/search_tree.png}
@@ -524,34 +749,63 @@ This tree structure will unroll the graph with possible loops, and encodes the d
 %   \label{fig:search_tree}
 % \end{figure}
 
+\ph{Algorithm description}
+In order to solve Eq.~(\ref{eq:graphoptprob}), we need a belief tree search algorithm.
+At a high level, we need to i) construct a belief tree that contains all the reachable nodes from the root node, and ii) update the expected value for each node by value backpropagation from the leaf nodes.
+iii) Once the expected value for each action for each node converges after enough iterations of i) and ii), we return the best action for each node that maximizes the expected value.
+% \todo{We can add a pseudo-code algorithm.\!\!}
+
+
 \begin{figure}[ht!]
   \centering
-  \includegraphics[width=.7\columnwidth]{figures/bts_example/bts_irm.png}
+  \includegraphics[width=.8\columnwidth]{figures/bts_example/bts_irm.pdf}
   \caption{Toy example: IRM}
   \label{fig:bts_irm}
 \end{figure}
 \begin{figure}[ht!]
   \centering
-  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map0.png}
-  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map1.png}
-  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map2.png}
-  \includegraphics[width=.45\columnwidth]{figures/bts_example/bts_map3.png}
-  \caption{Toy example: Occupancy grid maps}
+  \subfloat[$M_{0}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map0.pdf}
+  }
+  \subfloat[$M_{01}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map01.pdf}
+  }
+  \subfloat[$M_{1}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map1.pdf}
+  }
+  \\ 
+  \subfloat[$M_{02}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map02.pdf}
+  }
+  \subfloat[$M_{2}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map2.pdf}
+  }
+  \subfloat[$M_{3}$]{%
+    \includegraphics[width=0.3\columnwidth]{figures/bts_example/bts_map3.pdf}
+  }
+  \caption{Toy example: Map beliefs depending on history.}
   \label{fig:bts_maps}
 \end{figure}
 \begin{figure}[ht!]
   \centering
-  \includegraphics[width=.5\columnwidth]{figures/bts_example/bts_example.png}
+  \includegraphics[width=\columnwidth]{figures/bts_example/bts_example.pdf}
   \caption{Toy example: Belief tree search}
   \label{fig:bts_example}
 \end{figure}
 
+\ph{Toy example}
+We describe the belief tree search process for a simple toy example.
+Herein, let us consider the maximum likelihood state as a belief state and assume the observations to be deterministic.
+The current IRM is as shown in Figure~\ref{fig:bts_irm}, and the robot is expected to be at the breadcrumb node 2, i.e., $x_2 \in \mathbb{X}$, with the latest map estimation $M_0$ in Figure~\ref{fig:bts_maps}.
 
-\ph{Algorithm description:}
-In order to solve Eq.~(\ref{eq:graphoptprob}), we need a belief tree search algorithm.
-At a high level, we need to i) construct a belief tree that contains all the reachable nodes from the root node, and ii) update the expected value for each node by value backpropagation from the leaf nodes.
-iii) Once the expected value for each action for each node converges after enough iterations of i) and ii), we return the best action for each node that maximizes the expected value.
-% \todo{We can add a pseudo-code algorithm.\!\!}
+Taking the current belief $b_0 = (M_0, x_2)$ as the root node, we can construct a belief tree as shown in Figure~\ref{fig:bts_example}.
+From the root node, there are two possible actions; moving to $x_1$ or $x_3$, while both of them will not be able to reduce the map uncertainty.
+In the case the robot moves from $x_3$ to $x_c$ and to $x_i$, a part of the map is uncovered, and the map belief is updated from $M_0$ to $M_{1}$.
+On the way back to $x_3$, the map belief will not change.
+
+Once a belief tree along the possible actions and updated beliefs is constructed up to a finite horizon, we can compute the graph value function for each node by backpropagating the value of the leaf node and the graph edge rewards along the branch.
+In this example, we can decide to move to $x_1$ from the current state since it can provide the same amount of information gain for a smaller action cost.
+
 
 \ph{Remark} We can improve the efficiency of this process in various ways \cite{silver2010monte,somani2013despot,bonet1998learning,kim2019pomhdp}.
 For example, we interleave the belief tree construction and belief tree search, so that we first focus on the subset of the tree that is likely to be included in the optimal policy tree. As for the planning horizon, we can use a fixed (discounted) horizon if $K$ is too large, but it can be useful to incorporate a variable finite horizon that can scale over different sizes and structures of the IRM.
@@ -674,7 +928,7 @@ where $\rho(b_t,\pi^M(\cdot,\theta))$ is the risk of the trajectory traversing f
 % \todo{move next section hacks here, but pull out some more general idea of why we do these hacks.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Experimental System \todo{need better title}} \label{sec:hierarchical}
+\section{Algorithmic Assumptions} \label{sec:hierarchical}
 
 In this section, we present implementation details about the hierarchical information-based planner for autonomous exploration in large unknown environments.
 
@@ -718,7 +972,7 @@ Using Bayes filtering, the \emph{log-odds} ratio can be recursively computed usi
 \end{align}
 \noindent where $l_{t-1,i}$ is the previous log-odds value, $l_{0,i}$ is the log-odds representation of the occupancy prior $p(\textbf{m}_i)$, and $p(\textbf{m}_i | z_{t},x_{t})$ is the inverse sensor model.
 
-There are drawbacks of the Log-Odds method, namely the formulation does not reflect dependencies among neighboring cells, and only a single number is stored per cell. \todo{I think this is where CRM should come in}
+There are drawbacks of the Log-Odds method, namely the formulation does not reflect dependencies among neighboring cells, and only a single number is stored per cell.  While in the past we have examined mapping algorithms for richer settings \cite{agha2019confidence}, for simplicity we restrain ourselves to the binary occupancy setting in this work.
 
 \subsubsection{Information Gain}
 Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x)$ of a probability distribution $p$ is the expected information $E[-\log p]$. The entropy of the occupancy grid map posterior is
@@ -729,6 +983,51 @@ Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x)$ of
 \begin{align}
     I_i = H_p(\textbf{m}_i) - E[H_{p}(\textbf{m}_i)]
 \end{align}
+
+
+\subsection{Frontier detection and pruning}
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[trim={7cm 9cm 10cm 5cm},clip,width=.48\textwidth,angle=180]{figures/frontier_detection.png}
+  \caption{Illustration of frontier detection process.
+    From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green), and detect frontier cells (green) that are adjacent to unknown cells. Then, we sample frontier nodes (pink squares) from the frontier cells.}
+  \label{fig:frontiering}
+\end{figure}
+
+The frontier detection/pruning process takes an input from the recent range sensor readings and returns a set of frontier nodes to be added or deleted on the IRM.
+
+Frontier detection is composed of several steps, frontier cell detection, frontier node sampling and filtering, and registration to the IRM.
+
+\ph{Frontier cell detection}
+Frontier cell detection is based on Fast Frontier Detection algorithm \cite{keidar2012robot} (see Figure~\ref{fig:frontiering}).
+From sensor ray end-points (yellow), we extract sensor contour (yellow, red, and green) that connect all the end-points in a sequential order.
+Then we detect frontier cells (green) that are adjacent to unknown cells.
+
+\ph{Frontier node sampling}
+A frontier node sampled from the detected frontier cells (pink square) as an approximation of the frontier cells.
+We determine the frontier node position by computing the centroid of the frontier cells.
+If the centroid is not in the known free space, we project it to the nearest frontier cell as an alternative. 
+
+\ph{Frontier node filtering}
+In order to prevent having duplicate frontier nodes on the IRM, we filter out new frontiers if they are closer to existing frontier nodes than a threshold.
+Additionally, we exclude new frontier nodes if they are near to the pose graph nodes that are generated by other robots.
+This is to ensure that new frontiers are not generated where any other robots have explored already.
+
+\ph{Registration of frontier nodes}
+Finally, we add the new frontiers to the IRM.
+They are connected to the breadcrumb that is closest to the current robot position to encode the visibility for the frontier nodes on the IRM.
+We save the relative position to the underlying pose graph node, so that we can keep the same topological structure after loop closure events.
+
+Frontier pruning process also starts from the cell-level validity checking and then updates the nodes on the IRM.
+
+\ph{Frontier cell pruning}
+We run raycasting from the current robot pose and update the occupancy state of the local occupancy grid map.
+If a frontier cell is no longer adjacent to unknown cells, we prune the frontier cell.
+
+\ph{Removal of frontier nodes}
+After pruning all frontier cells on the local occupancy grid map, we check if any frontier node have only a few remaining frontier cells associated with it.
+If it is so, we prune the frontier node from the IRM. 
 
 
 \subsection{Graph-level Planning}
@@ -813,7 +1112,7 @@ which we want to constrain to be below some graph-level risk threshold $\psi(k)$
 \ph{Planner implementation}
 To find the optimal path from node $v_i$ to $v_j$, we can optimize Eq. (\ref{eq:mapopt}) with any approximate method.  A wide range of approximations exist for solving the general information maximization problem.  A low fidelity approximation might be to reduce the problem to a simple $A^*$ search by finding the highest-reward path between node $v_i$ and $v_j$.  To disentangle the effect of updating the map belief after taking an action, we can make the approximation that the information to be gained at each grid cell is simply the number of unknown cells within the local sensing radius.  Then we can employ $A^*$ search on grid cells which are below a desired risk threshold.
 
-\begin{figure}[ht!]
+\begin{figure}[t!]
   \includegraphics[width=.48\textwidth]{figures/structure_v5.png}
   \centering
   \caption{Hierarchical Information-based Planner Architecture}
@@ -866,6 +1165,7 @@ where $\alpha$ weighs the cost of traversal against new information gain for a g
 \end{align}
 
 \subsubsection{Grid-level policy}
+Within the grid-level policy $\pi^M$ we did not consider information gain directly.  Instead, we compute the risk of traversal for each grid cell via a traversability analysis which looks at ground surface normals and step height of obstacles.  It identifies lethal vs non-lethal regions which are then inflated by the footprint of the robot.  $A^*$ is used to plan low-risk paths between the robot's current position and the goal $\pi^g$.  The robot tracks this $A^*$ path with an underlying kinodynamic controller which samples trajectories in velocity space.
 
 \subsubsection{Overall policy}
 Given a graph-level policy, overall policy is:
@@ -889,15 +1189,15 @@ Figure \ref{fig:beta_map} shows the map constructed during exploration of the Be
 	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
 	    
 	    	% Annotations
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.1,0.66) {1.8 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.43,0.66) {3.6 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.76,0.66) {6.6 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.1,0.33) {9.6 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.44,0.33) {14.4 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.77,0.33) {15.6 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.11,0.005) {24.6 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.43,0.005) {27 m};
-	    	\node [font=\scriptsize,above left,align=right,white] at (0.75,0.005) {60 m};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.12,0.66) {1.8 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.45,0.66) {3.6 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.78,0.66) {6.6 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.12,0.33) {9.6 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.46,0.33) {14.4 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.79,0.33) {15.6 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.13,0.005) {24.6 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.44,0.005) {27 min};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.77,0.005) {60 min};
 	    	
 	        % helpers
 	       % \draw[help lines,xstep=.1,ystep=.1] (0,0) grid (1,1);
@@ -911,14 +1211,14 @@ Figure \ref{fig:beta_map} shows the map constructed during exploration of the Be
 
 
 \begin{figure}[ht!]
-  \includegraphics[width=.48\textwidth]{figures/dist_traveled.pdf}
+  \includegraphics[width=.48\textwidth,trim=3cm 0 4cm 0, clip]{figures/dist_traveled.pdf}
   \centering
-  \caption{Total distance traveled over time and total area covered over time during Team CoSTAR's second run on the Beta course in the DARPA Subterranean Challenge Urban Circuit.}
+  \caption{Total distance traveled, total area covered, and total number of pointcloud points added to the 3D LiDAR map (at 10m resolution) vs.  time, during Team CoSTAR's second run on the Beta course in the DARPA Subterranean Challenge Urban Circuit.}
   \label{fig:dist_traveled}
 \end{figure}
 
 \begin{figure}[ht!]
-  \includegraphics[width=.48\textwidth]{figures/paths_on_map.png}
+  \includegraphics[width=.48\textwidth,angle=90]{figures/paths_on_map.png}
   \centering
   \caption{Overlay of paths traveled by robots over time on the ground truth pointcloud of the competition course.  Color indicates time at which the path was traversed, from purple ($t=0$) to yellow ($t=60min$).}
   \label{fig:paths_on_map}
@@ -1054,6 +1354,7 @@ Figure \ref{fig:beta_map} shows the map constructed during exploration of the Be
 In this work, we have developed a framework for exploring unknown environments in a POMDP framework in extremely large environments.  
 To obtain a tractable solution we discretize the belief space into a robot and task-relevant graph structure which reduces our search space for good policies.  We call this graph structure an Information Roadmap (IRM).  We demonstrate these capabilites in the DARPA Subterranean Challenge.  Future work includes learning based methods for graph expansion information gain estimation, multi-robot policy search, and a richer incorporation of risk and time into the graph planning framework.
 
+$Z(s, a, z) = P(z\,|\,s, a)$
 
 % \clearpage
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1637,9 +1938,23 @@ To obtain a tractable solution we discretize the belief space into a robot and t
 % \clearpage{}
 
 
+%===============================================================================
 
-\bibliographystyle{unsrt}
-\bibliography{references}
+% The maximum paper length is 8 pages excluding references and acknowledgements, and 10 pages including references and acknowledgements
+
+\clearpage
+% The acknowledgments are automatically included only in the final version of the paper.
+\acknowledgments{If a paper is accepted, the final camera-ready version will (and probably should) include acknowledgments. All acknowledgments go at the end of the paper, including thanks to reviewers who gave useful comments, to colleagues who contributed to the ideas, and to funding agencies and corporate sponsors that provided financial support.}
+
+%===============================================================================
+
+% no \bibliographystyle is required, since the corl style is automatically used.
+\bibliography{references}  % .bib
+
+
+% IEEE / before CoRL
+% \bibliographystyle{unsrt}
+% \bibliography{references}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
