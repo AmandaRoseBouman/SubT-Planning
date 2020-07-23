@@ -21,6 +21,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{mathtools}
+\usepackage{todonotes}
 
 \usepackage{tikzpagenodes}
 
@@ -337,6 +338,69 @@ In the next section, we present the problem formulation. In Section \ref{sec:gri
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Problem Description}
 
+Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty.  
+
+\subsection{Uncertainties}
+
+
+\subsection{POMDP Formulation}
+
+\ph{POMDP Structure} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the world, $\mathbb{A}$ is the set of actions, and $\mathbb{Z}$ is the set of observations sensed by the agent of the world. The state $s = (M, x) \in \mathbb{S}$ consists of the static environment map $M$ and the robot pose $x$. At every time step, the agent performs an action $a \in \mathbb{A}$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. Finally, the reward function $R(s,a)$ returns the expected reward for taking action $a$ in state $s$.
+
+\ph{Belief State} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. Our belief state is a two-element tuple $b=p(M,x)$ consisting of the partially observed map $M$ and the robot pose $x$.
+
+\ph{Map Belief} We discretize the belief of the map $M$ into $N_M$ grid cells, by constructing a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of the map.  For example, the cell can capture belief about occupancy, risk of traversal, or the likelihood it contains an artifact or object of interest.  Occupancy grid maps have been well studied for some time \cite{moravec1985high,elfes1990stochastic}.
+%
+Formally, an we define the grid map as composed of grid cells:
+\begin{align}
+  M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
+\end{align}
+where $\mathbf{m}^i$ is a random variable for the state of the $i$-th cell,
+i.e., $\mathbf{m}^i \in \mathbb{M}$, and
+$N_M$ is the total number of grid cells in the map.
+In the case of an occupancy grid map, $\mathbf{m}^i$ is a Bernoulli random variable with $\mathbb{M} = \{free, occupied\}$.  More generally, $\mathbb{M}$ can be the cross space of multiple boolean and real variables which represent different attributes.  For example, $\mathbb{M} = \{free, occupied\}\times\{artifact, no\, artifact\}\times [0,1] (risk)$.
+The value of $\mathbf{m}^i$ is often assumed to be static over time.
+
+
+
+\ph{General Belief Update} After the agent executes action $a_{t-1}$ and receives observation $z_t$, the belief state can be updated according to Bayes algorithm:
+\begin{align}
+  b_t(s') &= P(s' | a_{t-1}, z_t, b_{t-1}) \\
+  &= \eta \, P(z_t | s', a_{t-1}, b_{t-1}) P(s' | a_{t-1}, b_{t-1}) \\
+  &= \eta \, P(z_t | s', a_{t-1})  \sum_{s \in \mathbb{S}} P(s' | a_{t-1}, b_{t-1}, s) P(s | a_{t-1}, b_{t-1}) \\
+  &= \eta \, O(s', a_{t-1}, z_t) \sum_{s \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s)
+\end{align}
+where $\eta$ is a normalizing constant. 
+
+\todo[inline]{What about map belief update?}
+
+\ph{Reward}
+\todo[inline]{How abstract? Definitions below are pretty abstract/opaque}
+
+\ph{Policy} A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$. The objective of coverage problem is to maximize the information gained from the environment. Informally, let $I(b, \pi(b))$ denote the information gain about the occupancy grid map states and robot localization after taking an action at the current belief $b$ under $\pi$.  We will formally define $I$ in subsequent sections.
+
+This objective as an optimization problem to maximize the information gain from the environment:
+\begin{align}
+  J(b,t;\pi) &= \mathbb{E} \left[ \sum_{t'=t}^{L} I(b_{t'}; \pi(b_{t'})) \right], \label{eq:artifactopt_cost}
+\end{align}
+where $J(b,t;\pi)$ is the value function and $L$ is the total number of timesteps to optimize over.  Note that $\pi$ can be a time-varying policy, but we omit the explicit notation for convenience for now.
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------
+
+that will minimize it's belief uncertainty.  predict how new information will affect its belief. 
+
+
+
+The agent's objective is to cover the entire area. 
+
 Given the current belief, the robot finds the best action, executes that action, and updates its belief. POMCP can handle POMDPs with a large number of states.
 
 Incorporate map occupancy and coverage.
@@ -347,7 +411,45 @@ We reason about uncertainties - vehicle control and sensing uncertainties into d
 
 Tool for robot planning under uncertainty
 
+Agent learns by executing sequences of actions.
 
+A POMDP agent maintains a belief about its world model or map and predicts how new information could affects its map belief. POMDP agent doesn't know world state, it maintains a belief OR history of actions and observations OR history of observations received so far. 
+
+In order to explore the space efficiently, the robot must infer about environment structure (occupancy), what's been seen (coverage), and traversability (risk). We can capture the uncertainty in the IRM. 
+
+Describe toy example and where the uncertainty comes in.
+- greedy nature of maximum-likelihood 
+- no reasoning about long term effects
+- no consideration of future sensor observations on belief (i.e. map belief)
+- We belief tree rooted at current belief
+- Tree branches over all actions and observations
+- The IRM encodes distributions of obstacles, traversability risk, previously explored area
+- Online POMDP handles uncertainties in map, both structure and traversability (OR actuator control/transition model)
+
+POMDP 
+- system takes sequence of actions under uncertainty to maximize total reward
+
+- Vehicle Modeling
+--> 8 discretized actions
+--> Add uncertainty via traversability penalty to form predicative model of vehicle dynamics
+- Map Modeling
+
+- Map Modeling
+--> Environmnet Sensor
+----> Occupancy
+----> Coverage
+----> should we say that we don't model observation noises for these variable as they are small and do not affect decision making substantially if we are replanning at a high enough rate.
+----> Traversability (but this is also under vehicle modeling)
+--> FOV in problem formulation
+
+- Reward Modeling
+--> Every action is penalized to ensure robot minimizes path length
+--> Rotations are penalized (check kyon's description). This penalizes excessive speed changes and encourages smooth motions.
+--> Seeing known free nodes within FOV gives reward (w/ ray tracing)
+--> Seeing unknown nodes within FOV gives less reward (even less )
+--> Edge Traversability
+
+Agent's probability of exploring new area depends on map's occupancy, coverage, traversability, all encoded in the IRM. Thus, the IRM determines the transition and reward functions. The belief characterizes agent's uncertainty about map structure and traversability and coverage. Based on its current belief, the robot can simulate observations it will get and minimize uncertainty about the map. We select trajectories that reduce map uncertainty. 
 
 \ph{Sources of uncertainty} - Problem Description (Amanda)
 \begin{enumerate}
@@ -379,43 +481,43 @@ We start by the most general form where the high-level formulation simultaneousl
 %\subsection{Belief State Representation}
 %In this section we briefly introduce generic POMDP formulation. For a detailed information, see e.g.,~\cite{Bertsekas05,TBF05,RN10}.
 
-\ph{State}
-Let $s_k = (M, x_k)$ denote the state of the system at the $k$-th time step, comprising the static environment map $M$ and the robot pose $x_k$ at the $k$-th time step. We denote the state space by $\mathbb{S}$.
+% \ph{State}
+% Let $s_k = (M, x_k)$ denote the state of the system at the $k$-th time step, comprising the static environment map $M$ and the robot pose $x_k$ at the $k$-th time step. We denote the state space by $\mathbb{S}$.
 
-\ph{Action}
-Let $a_k$ denote the activity performed by the agent at the $k$-th time step when following a policy. We denote the action space by $\mathbb{A}$.  
+% \ph{Action}
+% Let $a_k$ denote the activity performed by the agent at the $k$-th time step when following a policy. We denote the action space by $\mathbb{A}$.  
 
-\ph{Observation}
-Let $z_k$ denote the observation at the $k$-th time step resulting from the agent's perceptual interaction with the environment We denote the observation space by $\mathbb{Z}$. 
+% \ph{Observation}
+% Let $z_k$ denote the observation at the $k$-th time step resulting from the agent's perceptual interaction with the environment We denote the observation space by $\mathbb{Z}$. 
 
-\ph{Transition model}
-We denote the motion model $T(s, a, s') = P(s'\,|\,s, a)$, which defines the probability of being at state $s'$ after taking an action $a$ in state $s$.
+% \ph{Transition model}
+% We denote the motion model $T(s, a, s') = P(s'\,|\,s, a)$, which defines the probability of being at state $s'$ after taking an action $a$ in state $s$.
 
-\ph{Observation model}
-The observation model $Z(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. 
+% \ph{Observation model}
+% The observation model $Z(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. 
 
-\ph{Belief}
-A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step. The belief space is denoted by $b \in \mathbb{B}$, and we can divide it into belief of the static map and belief of the state:
-\begin{align}
-    b(s) = p(M,x)
-\end{align}
+% \ph{Belief}
+% A belief $b(s)$ is a posterior distribution over all possible states given the past actions and observations, i.e., $b_{t}(s) = P(s \,|\, a_{0:t-1}, z_{1:t})$ where the subscript $t$ denotes the time step. The belief space is denoted by $b \in \mathbb{B}$, and we can divide it into belief of the static map and belief of the state:
+% \begin{align}
+%     b(s) = p(M,x)
+% \end{align}
 
-\ph{Belief dynamics}
-Given $a_{t-1}$, $z_t$, and $b_{t-1}(s)$,
-the updated belief $b_t(s)$ can be computed by Bayesian filtering
-\begin{align}
-  b_t(s) &= \tau (b_{t-1}(s), a_{t-1}, z_t)
-  \label{eq:tau-belief}
-\end{align}
-Belief dynamics can be divided into two sub-steps as follows.
-\begin{align}
-  b_{t-1}(s; a_{t-1}) &= \sum_{s' \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s),
-  \label{eq:prediction}
-  \\
-  b_t(s; a_{t-1}, z_t) &= \eta Z(s, a_{t-1}, z_t) b_{t-1}(s; a_{t-1}),
-  \label{eq:correction}
-\end{align}
-where $\eta$ is a normalizing constant.
+% \ph{Belief dynamics}
+% Given $a_{t-1}$, $z_t$, and $b_{t-1}(s)$,
+% the updated belief $b_t(s)$ can be computed by Bayesian filtering
+% \begin{align}
+%   b_t(s) &= \tau (b_{t-1}(s), a_{t-1}, z_t)
+%   \label{eq:tau-belief}
+% \end{align}
+% Belief dynamics can be divided into two sub-steps as follows.
+% \begin{align}
+%   b_{t-1}(s; a_{t-1}) &= \sum_{s' \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s),
+%   \label{eq:prediction}
+%   \\
+%   b_t(s; a_{t-1}, z_t) &= \eta Z(s, a_{t-1}, z_t) b_{t-1}(s; a_{t-1}),
+%   \label{eq:correction}
+% \end{align}
+% where $\eta$ is a normalizing constant.
 % For notational convenience, let us denote $b_{t-1}(s; a) = b_{t-1}^a$ and $b_t(s; a, z) = b_t = b_{t-1}^{a z}$ hereafter.
 
 \ph{Policy}
