@@ -310,6 +310,24 @@ Custom rollout
   \label{fig:firstPage}
 \end{figure}
 
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=.6\textwidth]{IRM_Planning/figures/sketch_hierarchical_belief_space.png}
+  \caption{Illustration}
+  \label{fig:illustration}
+\end{figure}
+
+vertical 
+
+escape?
+IPE
+
+rviz
+
+DIAGRAM like Fig.~\ref{fig:architecture}
+
+
+
 
 \ph{Generic formulation}
 The above-mentioned mission in its most general form can be cast as a POMDP, where the robot's belief of both its own position and the environment are a function of the history of the robot's actions and observations.  
@@ -340,7 +358,65 @@ In the next section, we present the problem formulation. In Section \ref{sec:gri
 
 Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty.  
 
-\subsection{Uncertainties}
+\subsection{IRM Construction (brief - details will go below) / Sources of Uncertainty}
+
+- Vehicle Modeling
+--> 8 discretized actions
+--> Add uncertainty via traversability penalty to form predicative model of vehicle dynamics
+- Map Modeling
+
+- Map Modeling
+--> Environmnet Sensor
+----> Occupancy
+----> Coverage
+----> should we say that we don't model observation noises for these variable as they are small and do not affect decision making substantially if we are replanning at a high enough rate.
+----> Traversability (but this is also under vehicle modeling)
+--> FOV in problem formulation
+
+
+\subsection{WIP: planner description}
+
+\ph{abstract coverage planner (class)}
+
+\begin{itemize}
+    \item Reward function: Information gain from gen(current\_state, action)
+    current\_state contains coverage, i) gen(state,action) gives the new robot pose (from traversability and occupancy), in turn ii) gen(state,action) provides new world (coverage) from ray tracing (from occupancy), and iii) gen(reward function) computes info gain from old and new coverages
+    \item Action cost (path length, risk)
+    \item Observation: information gain, pose
+    \item State: robot pose and (abstract) environment (coverage)
+    $s = (x, W) \in \mathbb{S}$
+    \item Environment: representation encoding traversability, occupancy, and coverage??
+    $W = (V, E)$, $v \in V = [node_feature_vector]$, $e \in E = [edge_feature_vector]$
+    node\_feature\_vector: node (spatial) pose, 
+    edge\_feature\_vector: connecting nodes by this edge, 
+    \item Generative model construction: need World representation traversability and occupancy (but not coverage)
+\end{itemize}
+
+
+\ph{graph-level coverage planner (instance)}
+
+\begin{itemize}
+    \item Action cost: (path length, risk) from 5m edges with A* path planning
+    \item Reward function: Info gain from directly-connected frontier nodes to the current breadcrumb
+    \item Observation: FOV is only the directly-connected frontier nodes
+    \item State: robot node and graph map
+    \item Environment representation: Bidirectional Graph
+\end{itemize}
+
+
+\ph{map-level coverage planner (instance)}
+\begin{itemize}
+    \item Observation: nodes immediately visible from the agent's position (2m FOV) with ray tracing
+    \item Action cost: rotation penalty + edge length
+    \item State: NxN grid of nodes that can have different values for covered (T/F) or occupied [0,1]
+        (NOTE: robot pose can be some expected value after a time period...)
+    \item Dynamics: Estimated dynamics given the grid-based road-map
+    \item Environment representation: Grid (spatially structured graph)
+
+\end{itemize}
+
+
+
 
 
 \subsection{POMDP Formulation}
@@ -372,10 +448,17 @@ The value of $\mathbf{m}^i$ is often assumed to be static over time.
 \end{align}
 where $\eta$ is a normalizing constant. 
 
-\todo[inline]{What about map belief update?}
+\todo[inline]{What about map belief update ("Recursive Map belief evolution")?}
 
 \ph{Reward}
-\todo[inline]{How abstract? Definitions below are pretty abstract/opaque}
+\todo[inline]{How abstract? Definitions below are pretty opaque? Should we be specific, i.e. with marginal utility (i.e. F(V U v)-F(V)) and rotation penalties etc}
+
+- Reward Modeling
+--> Every action is penalized to ensure robot minimizes path length
+--> Rotations are penalized (check kyon's description). This penalizes excessive speed changes and encourages smooth motions.
+--> Seeing known free nodes within FOV gives reward (w/ ray tracing)
+--> Seeing unknown nodes within FOV gives less reward (even less )
+--> Edge Traversability
 
 \ph{Policy} A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to a desirable action $a$. The objective of coverage problem is to maximize the information gained from the environment. Informally, let $I(b, \pi(b))$ denote the information gain about the occupancy grid map states and robot localization after taking an action at the current belief $b$ under $\pi$.  We will formally define $I$ in subsequent sections.
 
@@ -428,26 +511,6 @@ Describe toy example and where the uncertainty comes in.
 
 POMDP 
 - system takes sequence of actions under uncertainty to maximize total reward
-
-- Vehicle Modeling
---> 8 discretized actions
---> Add uncertainty via traversability penalty to form predicative model of vehicle dynamics
-- Map Modeling
-
-- Map Modeling
---> Environmnet Sensor
-----> Occupancy
-----> Coverage
-----> should we say that we don't model observation noises for these variable as they are small and do not affect decision making substantially if we are replanning at a high enough rate.
-----> Traversability (but this is also under vehicle modeling)
---> FOV in problem formulation
-
-- Reward Modeling
---> Every action is penalized to ensure robot minimizes path length
---> Rotations are penalized (check kyon's description). This penalizes excessive speed changes and encourages smooth motions.
---> Seeing known free nodes within FOV gives reward (w/ ray tracing)
---> Seeing unknown nodes within FOV gives less reward (even less )
---> Edge Traversability
 
 Agent's probability of exploring new area depends on map's occupancy, coverage, traversability, all encoded in the IRM. Thus, the IRM determines the transition and reward functions. The belief characterizes agent's uncertainty about map structure and traversability and coverage. Based on its current belief, the robot can simulate observations it will get and minimize uncertainty about the map. We select trajectories that reduce map uncertainty. 
 
