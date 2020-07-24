@@ -22,6 +22,7 @@
 \usepackage{amssymb}
 \usepackage{mathtools}
 \usepackage{todonotes}
+\usepackage{enumitem}
 
 \usepackage{tikzpagenodes}
 
@@ -60,13 +61,13 @@ Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in E
 \author{
   Sung-Kyun Kim*\\
   NASA Jet Propulsion Laboratory\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{sung.kim@jpl.nasa.gov} \\
   \And
   Amanda Bouman*\\
   Department of Mechanical and Civil Engineering\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{abouman@caltech.edu} \\
   \And
@@ -78,25 +79,25 @@ Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in E
   \And
   David D. Fan\\
   NASA Jet Propulsion Laboratory\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{david.d.fan@jpl.nasa.gov} \\
   \And
   Kyohei Otsu\\
   NASA Jet Propulsion Laboratory\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{kyohei.otsu@jpl.nasa.gov} \\
   \And
   Joel Burdick\\
   Department of Mechanical and Civil Engineering\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{jwb@robotics.caltech.edu} \\
   \And
   Ali-akbar Agha-mohammadi\\
   NASA Jet Propulsion Laboratory\\
-  California Institute of California\\
+  California Institute of Technology\\
   United States\\
   \texttt{aliagha@jpl.nasa.gov} \\
 }
@@ -181,6 +182,14 @@ RELATED WORK
 
 Larger-space exploration
 : (Gautam) RL-based approaches
+
+Intrinsic Curiosity Module \cite{pathak_icm}: you can formulate this with 'surprise', the more difference between your predicted state and actual state, the more the surprise factor. This can fail in certain situations. The most popular experiment on this was from \cite{burda2018study}, where an agent is dropped in an env where it can move but also change channels on a TV (if it is near the TV). The agent would just be drawn to the TV because changing the channels constantly gave it a new visual reward and it wouldn't explore the rest of the map. This was known as a 'couch-potato' behaviour. Thus, the agent was curious, in a sense, but not productive in exploring the map.
+
+Episodic Curiosity through Reachability \cite{ECR2018}: There are agents that mark parts of the map as 'far away' in an effort to deincentivize the single-step jumps such as changing a TV channel. These agents go through the environment and are only rewarded for observations that are relatively far away from the current observation. While this is a potential solution for the couch-potato effect, we now need to track potential landmarks where the agent has been to keep track of which parts are already explored. But there is no such memory for the agent. Instead the environment has a storage of visited landmarks and gives the agent an augmented reward based on proximity to currently explored landmarks.
+
+There's also something on random network distillation \cite{rnd} to help explore.
+
+
 -> limitations
 : (Amanda) TSP
 
@@ -271,11 +280,12 @@ $\hat{V}(b) = \mathbb{E}_\theta ...$ (with estimated gen with prior $\theta$)
 
 
 
-algorithm description (Gautam)
+Algorithm description (Gautam)
 
 1. Hierarchical planning
+We have a planner at a higher level that represents the entire map as a simple bidirectional graph. This helps us keep a map of the entire world at a high level. It has explored nodes that are part of the graph and potentially explorable nodes that are one edge away. This is called the graph-level planner, and it leads us to potentially explorable frontiers.
 
-
+Once we read a node in the graph, we have another local planner that represents the world around it as an occupancy grid. This is the grid-level planner. \gautam{renamed MLP to GridLP, let me know if this name makes sense}. Each cell in the grid has a probability of occupancy and a boolean parameter isExplored (also known as coverage). In this local level, the robots goal is to explore all traversable parts of this local grid using a modified version of the POMCP algorithm.
 
 2. High-confidence...? gen model
 
@@ -341,7 +351,7 @@ To obtain a tractable solution we discretize the belief space into a robot and t
 In this work, we develop a framework for autonomous exploration of a large, unknown environment using a multi-resolution map representation enriched with future map estimates. We evaluate the expected perceptual information gain and traversability risk on a local dense map representation. This map is then discretized to achieve a global, computationally-efficient map representation, spanning the entirety of the known environment, and enriched with the locally gathered map estimates. High level actions are planned on the global map, and then converted to low level actions on dense map.    
 
 \ph{Outline}
-In the next section, we present the problem formulation. In Section \ref{sec:grid_representation}, we describe our high-resolution representation of the environment (occupancy map). Section \ref{sec:planning} focuses on how we discretize the high-resolution map to achieve a low-resolution representation (graph) and how we plan robot action sequences on both the graph and map. Section \ref{sec:hierarchical} presents concrete details about how the graph and map planners interact in a hierarchical manner for autonomous exploration of large, unknown environments. Finally, in Section \ref{sec:urban}, we describe how we implemented this hierarchical planning scheme for the Urban Circuit of the DARPA Subterranean Challenge.
+In the next section, we present the problem formulation. In Section \ref{sec:lattice_representation}, we describe our high-resolution representation of the environment (occupancy map). Section \ref{sec:planning} focuses on how we discretize the high-resolution map to achieve a low-resolution representation (graph) and how we plan robot action sequences on both the graph and map. Section \ref{sec:hierarchical} presents concrete details about how the graph and map planners interact in a hierarchical manner for autonomous exploration of large, unknown environments. Finally, in Section \ref{sec:urban}, we describe how we implemented this hierarchical planning scheme for the Urban Circuit of the DARPA Subterranean Challenge.
 
 % \begin{figure}[t!]
 %   \centering
@@ -351,30 +361,148 @@ In the next section, we present the problem formulation. In Section \ref{sec:gri
 % \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\section{Related Work}
+\section{Related Work}
+
+
+\ph{}
+
+\ph{}
+
+\ph{}
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Problem Description}
 
+\ph{Exploration/coverage}
 Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty.  
 
-\subsection{IRM Construction (brief - details will go below) / Sources of Uncertainty}
 
-- Vehicle Modeling
---> 8 discretized actions
---> Add uncertainty via traversability penalty to form predicative model of vehicle dynamics
-- Map Modeling
+\subsection{Basic POMDP Formulation}
 
-- Map Modeling
---> Environmnet Sensor
-----> Occupancy
-----> Coverage
-----> should we say that we don't model observation noises for these variable as they are small and do not affect decision making substantially if we are replanning at a high enough rate.
-----> Traversability (but this is also under vehicle modeling)
---> FOV in problem formulation
+\ph{Structure} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the world, $\mathbb{A}$ is the set of actions, and $\mathbb{Z}$ is the set of observations sensed by the agent of the world. The state $s = (M, q) \in \mathbb{S}$ consists of the static environment map $M$ and the robot pose $q$. At every time step, the agent performs an action $a \in \mathbb{A}$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. Finally, the reward function $R(s,a)$ returns the expected utility for executing action $a$ in state $s$.
+
+\ph{Belief States} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. Our belief state is a two-element tuple $b=p(M,q)$ consisting of the partially observed map $M$ and the robot pose $q$. After the agent executes action $a_{t-1}$ and receives observation $z_t$, the belief state can be updated according to Bayes algorithm:
+\begin{align}
+  b_t(s') &= \tau (b_{t-1}, a_{t-1}, z_t) \\
+%   &= P(s' | a_{t-1}, z_t, b_{t-1}) \\
+%   &= \eta \, P(z_t | s', a_{t-1}, b_{t-1}) P(s' | a_{t-1}, b_{t-1}) \\
+%   &= \eta \, P(z_t | s', a_{t-1})  \sum_{s \in \mathbb{S}} P(s' | a_{t-1}, b_{t-1}, s) P(s | a_{t-1}, b_{t-1}) \\
+  &= \eta \, O(s', a_{t-1}, z_t) \sum_{s \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s)
+\end{align}
+where $\tau$ is the state-transition function, and $\eta$ is a normalizing constant independent of state $s'$. 
 
 
-\subsection{WIP: planner description}
+\ph{Optimal Policy} A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to an action $a$. Our objective is find the policy that minimizes the time required to completely cover an unknown environment. To compute the optimal policy, we rely on the one-step reward function $R(b_t, a_t)$ that encodes the desired behavior of the robot: 
+\begin{align}
+    R(b_t, \pi(b_t)) &= \fn{f}\big[ \underbrace{I(m_t, q_t, a_t)}_{\text{Utility}} \, , \, \underbrace{\rho(m_t, q_t, a_t) \, , \, d(m_t, q_t, a_t)}_{\text{Cost}} \big]
+    \label{eq:reward}
+\end{align}
+where we define the following terms:
+\begin{itemize}[labelindent=0pt,labelwidth=1.25em,leftmargin=!]
+    \item $I(m_t, q_t, a_t)$: information gain agent perceives from environment from $b_t$ under policy $\pi(b_t)$. This can include newly observed environment surface area, artifact identification, or distinguishing geometric features allowing for the minimization of localization error.
+    \item $\rho(m_t, q_t, a_t)$: risk associated with the trajectory planned from $b_t$ under policy $\pi(b_t)$.
+    \item $d(m_t, q_t, a_t)$: robot actuator output required to execute the trajectory planned from $b_t$ under policy $\pi(b_t)$. This characterizes metrics such as distance traveled and velocity fluctuations during traversal. 
+\end{itemize}
+
+The optimal policy maximizes the expected discounted sum of future reward:
+\begin{align}
+%   \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{\infty} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  \label{eq:optimal_policy}
+  s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
+\end{align}
+where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+
+\ph{Computational Challenges} The problem in Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning horizon. 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Hierarchical Coverage Planner POMDP Formulation}
+
+
+\subsection{Abstract Coverage Planner} 
+
+% \begin{itemize}
+%     \item Reward function: Information gain from gen(current\_state, action)
+%     current\_state contains coverage, i) gen(state,action) gives the new robot pose (from traversability and occupancy), in turn ii) gen(state,action) provides new world (coverage) from ray tracing (from occupancy), and iii) gen(reward function) computes info gain from old and new coverages
+%     \item Action cost (path length, risk)
+%     \item Observation: information gain, pose
+%     \item State: robot pose and (abstract) environment (coverage)
+%     $s = (x, W) \in \mathbb{S}$
+%     \item Environment: representation encoding traversability, occupancy, and coverage??
+%     $W = (V, E)$, $v \in V = [node_feature_vector]$, $e \in E = [edge_feature_vector]$
+%     node\_feature\_vector: node (spatial) pose, 
+%     edge\_feature\_vector: connecting nodes by this edge, 
+%     \item Generative model construction: need World representation traversability and occupancy (but not coverage)
+% \end{itemize}
+
+\ph{Key characteristics} We present an abstract coverage planner formulated as a POMDP solver...
+Maintains belieWorld representation
+
+\ph{Advantage (POMDP)}
+Longer-horizon planning
+General cost functions (incorporate multiple objectives)
+
+\ph{Advantage (Abstract representation)}
+System-agnostic
+Scalable
+
+\ph{Key/common components}
+
+
+
+
+
+\subsection{Hierarchical Planning Structure} 
+The proposed hierarchical planner decomposes the problem into tractable subproblems by introducing a spatial and temporal discretization which restrict the behavior of the robot to a smaller, information-efficient search space. The hierarchical planner has two layers with different map representations. The higher layer, termed \emph{graph-level planner}, employs a sparse graph structure of dynamic size which spans the entirety of the known environment. The lower layer, termed \emph{lattice-level planner}, employs a dense grid structure of fixed dimensions which moves with the robot. 
+
+
+
+
+\subsection{Proposed Framework (GOOD NAME??)} 
+
+\subsubsection{Graph-Level Planner} 
+
+\ph{Environment Representation} We employ a sparse bidirectional graph structure $G = (V, E)$ that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V$ and edges $E$ are enriched with environmental information. Each node $v \in V$ has attached to it a feature vector containing the probability $p(occ(v))$ that the node is occupied and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. Each edge $e_{ij} \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between the connected nodes $v_i$ and $v_j$.
+
+% The IRM graph grows through the addition of new nodes and edges as the robot navigates to previously unexplored areas of the map. We distinguish between two types of nodes: breadcrumb nodes and frontier nodes. Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversable (low risk) space where the robot has previously explored, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$.
+
+\ph{State} The state is a two-element tuple $s_t=(G_t, q_t) \in \mathbb{S}$ consisting of the current graph map $G_t$ and the node $q_t$ closest to the robot's current pose. Each node $v \in V$ stores its occupancy and coverage state.
+
+\ph{Observation} The observation $z \in \mathbb{Z}$ received by the robot are the nodes directly connected to node $q_t$. The observation model is defined as $O: V^{cov} \times S \rightarrow \mathbb{Z}$ where $S$ is one edge length.
+
+\ph{Policy} We define the output of the graph policy $\pi^g(v_i)$ to be a neighboring node $\theta=v_j$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i)$ induces a transition from nodes $v_i$ to $v_j$ with probability one:
+\begin{align}
+    T^{g} (v_i, \pi^g(v_i), v_j) = 1
+\end{align}
+There are a dynamic number of actions for a given node.
+
+\ph{Reward} We define the graph reward as the reward gained by executing the graph-level policy $\pi^g$ from node $v$ as a function $R^g(v, \pi^g): V \times \Pi^g \to \mathbb{R}$. The reward function, as defined in Eq. (\ref{eq:reward}), includes costs associated with path length and risk and utility associated with the observation $z$ of previously uncovered nodes. 
+
+\subsubsection{Lattice-Level Planner} 
+
+\ph{Environment Representation} We employ a rolling, fixed-sized lattice structure which is centered at the robot's current position. Like the graph structure, each node $v \in V$ has attached to it a feature vector containing the probability of occupancy $p(occ(v))$ and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. The lattice structure has additional edge information-- each edge $e \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between connected nodes $v_i$ and $v_j$.
+
+\ph{State} Two-element tuple $s_t=(G_t, q_t)$ consisting of the current graph map $G_t$ and the node $q_t$ closest to the robot's current pose. Each node $v \in V$ stores its occupancy and coverage state.
+
+\ph{Observation} The observation $z \in \mathbb{Z}$ are nodes immediately visible from the robot's position subject to ray tracing. The observation model is defined as $O: \mathbb{Q} \times V^{occu} \times V^{cov} \rightarrow \mathbb{Z}$ where $S$ is pre-specified sensor range.
+
+\ph{Policy} We define the output of the graph policy $\pi^g(v_i)$ to be a neighboring node $\theta=v_j$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i)$ induces a transition from nodes $v_i$ to $v_j$ with probability one:
+\begin{align}
+    T^{g} (v_i, \pi^g(v_i), v_j) = 1
+\end{align}
+Given the lattice structure, there are 8 possible actions for a node internal to the structure. Be more specific.
+
+\ph{Reward Function} Action cost: rotation penalty + edge length, Utility: Info gain from neighbors
+
+
+
+
 
 \ph{abstract coverage planner (class)}
 
@@ -411,23 +539,22 @@ Exploration and coverage of a partially-revealed environment can be modeled as a
     \item State: NxN grid of nodes that can have different values for covered (T/F) or occupied [0,1]
         (NOTE: robot pose can be some expected value after a time period...)
     \item Dynamics: Estimated dynamics given the grid-based road-map
-    \item Environment representation: Grid (spatially structured graph)
+    \item Environment representation: lattice (spatially structured graph)
 
 \end{itemize}
 
+*observation model
+
+
+----------------------------------------------------------------------
 
 
 
+Our belief state is a two-element tuple $b=p(M,q)$ consisting of the partially observed map $M$ and the robot pose $q$.
 
-\subsection{POMDP Formulation}
-
-\ph{POMDP Structure} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the world, $\mathbb{A}$ is the set of actions, and $\mathbb{Z}$ is the set of observations sensed by the agent of the world. The state $s = (M, x) \in \mathbb{S}$ consists of the static environment map $M$ and the robot pose $x$. At every time step, the agent performs an action $a \in \mathbb{A}$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. Finally, the reward function $R(s,a)$ returns the expected reward for taking action $a$ in state $s$.
-
-\ph{Belief State} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. Our belief state is a two-element tuple $b=p(M,x)$ consisting of the partially observed map $M$ and the robot pose $x$.
-
-\ph{Map Belief} We discretize the belief of the map $M$ into $N_M$ grid cells, by constructing a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of the map.  For example, the cell can capture belief about occupancy, risk of traversal, or the likelihood it contains an artifact or object of interest.  Occupancy grid maps have been well studied for some time \cite{moravec1985high,elfes1990stochastic}.
+We discretize the belief of the map $M$ into $N_M$ lattice cells, by constructing a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of the map.  For example, the cell can capture belief about occupancy, risk of traversal, or the likelihood it contains an artifact or object of interest.  Occupancy grid maps have been well studied for some time \cite{moravec1985high,elfes1990stochastic}.
 %
-Formally, an we define the grid map as composed of grid cells:
+Formally, an we define the lattice map as composed of grid cells:
 \begin{align}
   M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
 \end{align}
@@ -438,15 +565,19 @@ In the case of an occupancy grid map, $\mathbf{m}^i$ is a Bernoulli random varia
 The value of $\mathbf{m}^i$ is often assumed to be static over time.
 
 
+- Vehicle Modeling
+--> 8 discretized actions
+--> Add uncertainty via traversability penalty to form predicative model of vehicle dynamics
+- Map Modeling
 
-\ph{General Belief Update} After the agent executes action $a_{t-1}$ and receives observation $z_t$, the belief state can be updated according to Bayes algorithm:
-\begin{align}
-  b_t(s') &= P(s' | a_{t-1}, z_t, b_{t-1}) \\
-  &= \eta \, P(z_t | s', a_{t-1}, b_{t-1}) P(s' | a_{t-1}, b_{t-1}) \\
-  &= \eta \, P(z_t | s', a_{t-1})  \sum_{s \in \mathbb{S}} P(s' | a_{t-1}, b_{t-1}, s) P(s | a_{t-1}, b_{t-1}) \\
-  &= \eta \, O(s', a_{t-1}, z_t) \sum_{s \in \mathbb{S}} T(s, a_{t-1}, s') b_{t-1}(s)
-\end{align}
-where $\eta$ is a normalizing constant. 
+- Map Modeling
+--> Environmnet Sensor
+----> Occupancy
+----> Coverage
+----> should we say that we don't model observation noises for these variable as they are small and do not affect decision making substantially if we are replanning at a high enough rate.
+----> Traversability (but this is also under vehicle modeling)
+--> FOV in problem formulation
+
 
 \todo[inline]{What about map belief update ("Recursive Map belief evolution")?}
 
@@ -614,12 +745,12 @@ Note that a POMDP problem can be formulated as a \textit{Belief MDP} by taking $
 \end{align}
 
 \ph{Computational challenges}
-The problem in Eq. (\ref{eq:MDP-belief}) is intractable because of 1) the high dimension of the belief $b$, particularly with respect to the belief over the map $M$, and 2) the large timescales $L$, since the complexity of the search space grows exponentially with time.  To obtain a tractable solution we discretize both the belief space $b=p(M,x)$ as well as time scale.  In Section \ref{sec:grid_representation} we discuss discretizing the map portion of the belief $M$, and in Section \ref{sec:planning} we discuss how we discretize the policy space and timescales to obtain a tractable planning problem.
+The problem in Eq. (\ref{eq:MDP-belief}) is intractable because of 1) the high dimension of the belief $b$, particularly with respect to the belief over the map $M$, and 2) the large timescales $L$, since the complexity of the search space grows exponentially with time.  To obtain a tractable solution we discretize both the belief space $b=p(M,x)$ as well as time scale.  In Section \ref{sec:lattice_representation} we discuss discretizing the map portion of the belief $M$, and in Section \ref{sec:planning} we discuss how we discretize the policy space and timescales to obtain a tractable planning problem.
 
 %\todo{transition to adding map, belief, information definitions}
 %\todo{add nice gentle figure which describes general approach (no math)}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Grid-based Belief Mapping} \label{sec:grid_representation}
+\section{Grid-based Belief Mapping} \label{sec:lattice_representation}
 
 We discretize the belief of the map $M$ into $N_M$ grid cells, by constructing a discretized random field in multi-dimensional space, where each independent cell stores a probabilistic estimate of the map.  For example, the cell can capture belief about occupancy, risk of traversal, or the likelihood it contains an artifact or object of interest.  Occupancy grid maps have been well studied for some time \cite{moravec1985high,elfes1990stochastic}.
 %
