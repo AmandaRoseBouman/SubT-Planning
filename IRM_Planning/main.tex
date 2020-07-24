@@ -441,18 +441,102 @@ where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewar
 %     \item Generative model construction: need World representation traversability and occupancy (but not coverage)
 % \end{itemize}
 
-\ph{Key characteristics} We present an abstract coverage planner formulated as a POMDP solver...
-Maintains belieWorld representation
+\ph{Key characteristics} We present an abstract coverage planner formulated as a variant of the POMCP solver... 
+(POMDP + Abstract state representation)
+Maintains belief over the robot and world representation
 
 \ph{Advantage (POMDP)}
+(compared to frontier-based greedy exploration)
 Longer-horizon planning
-General cost functions (incorporate multiple objectives)
+Receding horizon planning (interleaving planning and execution)
+...
 
-\ph{Advantage (Abstract representation)}
+\ph{Advantage of using an abstract representation}
+(compared to concrete? representation)
+Flexible and representation-rich format?
 System-agnostic
 Scalable
+General cost functions (incorporate multiple objectives) -- IRM can encode multi-dimensional information feature vector (lidar, artifact1, artifact2, etc.)
+...
+coverage application -> spatial information + metadata (e.g. co2 sensor reading etc)
+so it extends to multi-dimensional information feature vectors
 
-\ph{Key/common components}
+
+\ph{Key/common components (Highlight)}
+
+Abstract state representation for coverage
+
+Generative model construction from prior
+
+
+
+\ph{Environment Representation}
+$G = (V, E)$
+
+% that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V$ and edges $E$ are enriched with environmental information. Each node $v \in V$ has attached to it a feature vector containing the probability $p(occ(v))$ that the node is occupied and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. Each edge $e_{ij} \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between the connected nodes $v_i$ and $v_j$.
+
+\ph{State} The system (robot-world) state is a 2-tuple $s = (W, Q) \in \mathbb{S}$ consisting of the current abstract world representation $W$ and the node $Q$ representing the robot state. Each node $v \in V$ stores its occupancy and coverage state.
+
+$W = (W_{occ}, W_{cov})$
+
+$W_{occ}$ information/representation about occupancy (geometry) of the parts of the environment
+
+% (For LLP, $s = (W^L, Q^L = (q, \dot{q})$)
+% $\dot{q} = (q_t - q_{t-1})/dt$
+% reward($Q^L_t, a$)
+
+
+\ph{Belief State} $b \in \mathbb{B} = p(s) = p(W, Q)$
+
+
+\ph{Motion model}
+% $T(s, a, s') = s \in \mathbb{S}$
+$T: \mathbb{S} \times \mathbb{A} \times \mathbb{S} \rightarrow \mathbb{S}$
+
+$\hat{T}(s, a, s'; W_{occ,0})$
+
+% $T(s, a, s'; W_{occ,0})$
+
+
+
+\ph{Observation} The observation $z \in \mathbb{Z}$ received by the robot are the nodes directly connected to node $q_t$. The observation model is defined as $O: Q \times W \rightarrow \mathbb{Z}$. % where $S$ is one edge length.
+
+$\hat{O}(s, a, z; W_{occ,0}, W_{cov,0})$
+
+\ph{Reward} $R: \mathbb{Q} \times \mathbb{W} \times \mathbb{A} \rightarrow \mathbb{R}$ \\
+% $R(Q, W, a) = f(info_gain) - f(action_penalty)$
+$\hat{R}(s, a) = F(\text{info gain}(W_{cov}, z), \text{action penalty}(W_{occ}, a))$
+% $R(s, z) = F(\text{info gain}, \text{action penalty})$
+% $R(W_{cov}, W_{occ}, z, a) = F(\text{info gain}(W_{cov}, z), \text{action penalty}(W_{occ}, a))$
+
+% We define the graph reward as the reward gained by executing the graph-level policy $\pi^g$ from node $v$ as a function $R^g(v, \pi^g): V \times \Pi^g \to \mathbb{R}$. The reward function, as defined in Eq. (\ref{eq:reward}), includes costs associated with path length and risk and utility associated with the observation $z$ of previously uncovered nodes.
+
+
+\ph{Generative model}
+Estimated generative model
+$\hat{\mathcal{G}} = F(b_0) = F(p(W_{occ, 0}))$, a prior belief $b_0$
+
+$\hat{\mathcal{G}}: \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{S} \times \mathbb{Z} \times \mathbb{R}$
+
+$\hat{\mathcal{G}}(\cdot) = F(T(\cdot), O(\cdot), R(\cdot))$
+
+
+
+\ph{Policy} 
+
+General POMDP's policy (MAY NOT NEED THIS?)
+\begin{align}
+  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  \label{eq:policy}
+  s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
+\end{align}
+where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+
+% We define the output of the graph policy $\pi^g(v_i)$ to be a neighboring node $\theta=v_j$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i)$ induces a transition from nodes $v_i$ to $v_j$ with probability one:
+% \begin{align}
+%     T^{g} (v_i, \pi^g(v_i), v_j) = 1
+% \end{align}
+% There are a dynamic number of actions for a given node.
 
 
 
@@ -486,11 +570,11 @@ There are a dynamic number of actions for a given node.
 
 \subsubsection{Lattice-Level Planner} 
 
-\ph{Environment Representation} We employ a rolling, fixed-sized lattice structure which is centered at the robot's current position. Like the graph structure, each node $v \in V$ has attached to it a feature vector containing the probability of occupancy $p(occ(v))$ and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. The lattice structure has additional edge information-- each edge $e \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between connected nodes $v_i$ and $v_j$.
+\ph{Environment Representation} We employ a rolling, fixed-sized lattice structure which is centered at the robot's current position. Like the graph structure, each node $v \in V$ has attached to it a feature vector containing the node position, probability of occupancy $p(occ(v))$, and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. The lattice structure has pre-computed edge information -- each edge $e \in E$ has attached to it a feature vector containing the probability $p(\rho_{ij}) = f(p_{occ}(v_j), p_{occ}(v_i)) = f(v_i, v_j, p(occ(\cdot)))$ of traversal between connected nodes $v_i$ and $v_j$, computed from the probabilities of occupancy.
 
 \ph{State} Two-element tuple $s_t=(G_t, q_t)$ consisting of the current graph map $G_t$ and the node $q_t$ closest to the robot's current pose. Each node $v \in V$ stores its occupancy and coverage state.
 
-\ph{Observation} The observation $z \in \mathbb{Z}$ are nodes immediately visible from the robot's position subject to ray tracing. The observation model is defined as $O: \mathbb{Q} \times V^{occu} \times V^{cov} \rightarrow \mathbb{Z}$ where $S$ is pre-specified sensor range.
+\ph{Observation} The observation $z \in \mathbb{Z}$ are nodes immediately visible from the robot's position subject to ray tracing. The observation model is defined as $O: q \times V^{occu} \times V^{cov} \rightarrow \mathbb{Z}$ where $S$ is pre-specified sensor range.
 
 \ph{Policy} We define the output of the graph policy $\pi^g(v_i)$ to be a neighboring node $\theta=v_j$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i)$ induces a transition from nodes $v_i$ to $v_j$ with probability one:
 \begin{align}
