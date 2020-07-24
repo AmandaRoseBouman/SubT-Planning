@@ -374,17 +374,11 @@ In the next section, we present the problem formulation. In Section \ref{sec:lat
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Problem Description}
+\section{Basic POMDP Formulation}
 
-\ph{Exploration/coverage}
-Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty.  
+\ph{Structure} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the world, $\mathbb{A}$ is the set of actions, and $\mathbb{Z}$ is the set of observations sensed by the agent of the world. At every time step, the agent performs an action $a \in \mathbb{A}$ in state $s$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. Finally, the reward function $R(s,a)$ returns the expected utility for executing action $a$ in state $s$.
 
-
-\subsection{Basic POMDP Formulation}
-
-\ph{Structure} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the world, $\mathbb{A}$ is the set of actions, and $\mathbb{Z}$ is the set of observations sensed by the agent of the world. The state $s = (M, q) \in \mathbb{S}$ consists of the static environment map $M$ and the robot pose $q$. At every time step, the agent performs an action $a \in \mathbb{A}$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. Finally, the reward function $R(s,a)$ returns the expected utility for executing action $a$ in state $s$.
-
-\ph{Belief States} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. Our belief state is a two-element tuple $b=p(M,q)$ consisting of the partially observed map $M$ and the robot pose $q$. After the agent executes action $a_{t-1}$ and receives observation $z_t$, the belief state can be updated according to Bayes algorithm:
+\ph{Belief State} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. After the agent executes action $a_{t-1}$ and receives observation $z_t$, the belief state can be updated according to Bayes algorithm:
 \begin{align}
   b_t(s') &= \tau (b_{t-1}, a_{t-1}, z_t) \\
 %   &= P(s' | a_{t-1}, z_t, b_{t-1}) \\
@@ -395,30 +389,30 @@ Exploration and coverage of a partially-revealed environment can be modeled as a
 where $\tau$ is the state-transition function, and $\eta$ is a normalizing constant independent of state $s'$. 
 
 
-\ph{Optimal Policy} A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to an action $a$. Our objective is find the policy that minimizes the time required to completely cover an unknown environment. To compute the optimal policy, we rely on the one-step reward function $R(b_t, a_t)$ that encodes the desired behavior of the robot: 
-\begin{align}
-    R(b_t, \pi(b_t)) &= \fn{f}\big[ \underbrace{I(m_t, q_t, a_t)}_{\text{Utility}} \, , \, \underbrace{\rho(m_t, q_t, a_t) \, , \, d(m_t, q_t, a_t)}_{\text{Cost}} \big]
-    \label{eq:reward}
-\end{align}
-where we define the following terms:
-\begin{itemize}[labelindent=0pt,labelwidth=1.25em,leftmargin=!]
-    \item $I(m_t, q_t, a_t)$: information gain agent perceives from environment from $b_t$ under policy $\pi(b_t)$. This can include newly observed environment surface area, artifact identification, or distinguishing geometric features allowing for the minimization of localization error.
-    \item $\rho(m_t, q_t, a_t)$: risk associated with the trajectory planned from $b_t$ under policy $\pi(b_t)$.
-    \item $d(m_t, q_t, a_t)$: robot actuator output required to execute the trajectory planned from $b_t$ under policy $\pi(b_t)$. This characterizes metrics such as distance traveled and velocity fluctuations during traversal. 
-\end{itemize}
-
-The optimal policy maximizes the expected discounted sum of future reward:
+\ph{Optimal Policy} A policy $\pi : \mathbb{B} \rightarrow \mathbb{A}$ maps each belief state $b$ to an action $a$. To compute the optimal policy, we rely on the one-step reward function $R(b_t, a_t)$ that encodes the desired behavior of the robot. The optimal policy maximizes the expected discounted sum of future reward for any given belief state:
 \begin{align}
 %   \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{\infty} \gamma^t R(b_t, \pi(b_t)) \right] \\
-  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right]
   \label{eq:optimal_policy}
-  s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
 \end{align}
-where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The overall objective is to solve this optimization problem in a computationally tractable way.
+
+\section{Exploration-Coverage Planning Problem}
+
+\ph{Why POMDP} Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing environment belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty. Our objective is to find the policy that minimizes the time required to completely cover a large, unknown environment.
+
+\ph{Traditional Map Representation} The belief state for this exploration-coverage POMDP is $b = p(M, x)$ where $M$ is the map state and $x$ is the robot state. Traditionally, $M$ is defined as an occupancy map composed of grid cells:
+\begin{align}
+    m = \{\textbf{m}_i\}
+\end{align}
+where $\mathbf{m}_i$ is a random variable representing the state (i.e. occupancy, coverage) of the $i$-th cell. The goal of belief grid mapping is to compute the posterior probability of the state of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
+\begin{align}
+  p(M | z_{1:t}, x_{1:t}),
+\end{align}
+Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$. So, the belief grid map is often assumed to be a Markov random field of order 0 in which the belief probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
+With the cell independence assumption, $p(M | z_{1:t}, x_{1:t})$ can be determined from the individual cell state probability, $p(\mathbf{m}_i | z_{1:t}, x_{1:t})$.
 
 \ph{Computational Challenges} The problem in Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning horizon. 
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -445,92 +439,108 @@ where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewar
 (POMDP + Abstract state representation)
 Maintains belief over the robot and world representation
 
-\ph{Advantage (POMDP)}
+\ph{Advantage (POMDP)} \\
 (compared to frontier-based greedy exploration)
-Longer-horizon planning
-Receding horizon planning (interleaving planning and execution)
-...
+\begin{itemize}
+    \item Longer-horizon planning
+    \item Receding horizon planning (interleaving planning and execution)
+\end{itemize}
 
-\ph{Advantage of using an abstract representation}
+\ph{Advantage of using an abstract representation} \\
 (compared to concrete? representation)
-Flexible and representation-rich format?
-System-agnostic
-Scalable
-General cost functions (incorporate multiple objectives) -- IRM can encode multi-dimensional information feature vector (lidar, artifact1, artifact2, etc.)
-...
-coverage application -> spatial information + metadata (e.g. co2 sensor reading etc)
+\begin{itemize}
+    \item Flexible and representation-rich format?
+    \item System-agnostic
+    \item Scalable
+    \item General cost functions (incorporate multiple objectives) -- IRM can encode multi-dimensional information feature vector (lidar, artifact1, artifact2, etc.)
+    \item coverage application -> spatial information + metadata (e.g. co2 sensor reading etc)
 so it extends to multi-dimensional information feature vectors
+\end{itemize}
 
 
 \ph{Key/common components (Highlight)}
 
-Abstract state representation for coverage
+\begin{itemize}
+    \item Abstract state representation for coverage
+    \item Generative model construction from prior
+\end{itemize}
 
-Generative model construction from prior
 
 
-
-\ph{Environment Representation}
-$G = (V, E)$
+\ph{System Representation} The system (robot + world) is represented by an abstract graph structure $W = (V, E)$, consisting of nodes $v \in V$ and edges $e \in E$.
 
 % that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V$ and edges $E$ are enriched with environmental information. Each node $v \in V$ has attached to it a feature vector containing the probability $p(occ(v))$ that the node is occupied and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. Each edge $e_{ij} \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between the connected nodes $v_i$ and $v_j$.
 
-\ph{State} The system (robot-world) state is a 2-tuple $s = (W, Q) \in \mathbb{S}$ consisting of the current abstract world representation $W$ and the node $Q$ representing the robot state. Each node $v \in V$ stores its occupancy and coverage state.
+\ph{State} We define the system (robot-world) state as a 2-tuple $s = (W, Q) \in \mathbb{S}$ consisting of the current abstract world representation $W$ and the node $Q \in V$ representing the robot state. The world can be further decomposed as $W = (W_{occ}, W_{cov})$ where $W_{occ}$ describes the geometry of the world and $W_{cov}$ encodes which regions of the world have been observed by the robot.   
 
-$W = (W_{occ}, W_{cov})$
+\ph{Belief State} Our belief state is a 2-tuple $b = p(s) = p(W,Q)$ consisting of the partially observed world $W$ and the fully observed robot state $Q$.
 
-$W_{occ}$ information/representation about occupancy (geometry) of the parts of the environment
+\ph{Action} Given a node $v_i \in V$ representing the robot's current position, a valid action at state $s$ is to move to connected node $v_j$ along the edge $e_{ij} \in E$. 
 
-% (For LLP, $s = (W^L, Q^L = (q, \dot{q})$)
-% $\dot{q} = (q_t - q_{t-1})/dt$
-% reward($Q^L_t, a$)
+\ph{Transition Model} Given an action $a$, the estimated transition model $T$ deterministically maps the robot and world state $s = (W, Q)$ to the subsequent state $s' = (W', Q')$:
+\begin{align}
+    \hat{T}(s, a, s'; \, W_{occ,0}): \, \mathbb{S} \times \mathbb{A} \times \mathbb{S} \rightarrow \mathbb{S} \\
+    \hat{T}(s, a, s'; \, W_{occ,0}): \, Q \times W \times \mathbb{A} \rightarrow Q \times W
+\end{align}
+where $W_{occ,0}$ represents the world geometry prior based on the robot's sensing of the real world. This geometry prior is used to estimate the traversability risk of an action $a \in \mathbb{A}$. If the traversabilty risk exceeds a pre-defined threshold, the robot does not transition along action-associated edge $e$ and, consequently, the state does not change: $s = s'$.
 
-
-\ph{Belief State} $b \in \mathbb{B} = p(s) = p(W, Q)$
-
-
-\ph{Motion model}
-% $T(s, a, s') = s \in \mathbb{S}$
-$T: \mathbb{S} \times \mathbb{A} \times \mathbb{S} \rightarrow \mathbb{S}$
-
-$\hat{T}(s, a, s'; W_{occ,0})$
-
+% $T: \mathbb{S} \times \mathbb{A} \times \mathbb{S} \rightarrow \mathbb{S}$ \\
+%$T(s, a, s') = s \in \mathbb{S}$ 
+% $\hat{T}(s, a, s'; W_{occ,0})$
 % $T(s, a, s'; W_{occ,0})$
 
+\ph{Observation} Upon taking an action $a$ in state $s$, the robot receives a complete observation of the robot state $Q$ and a partial observation of the world state $W$. While we assume the robot state $Q$ is fully observable due to accurate proprioception, the world state $W$ is only partially revealed to the robot at any given time. Given a robot state $Q$, the robot observes only regions ("states"?) of the world within the field-of-view (FOV) of its sensors. Thus, we define the observation $z = w_{cov} \subset W_{cov}$ as the coverage state of the world within a sensor-constrained neighborhood of the robot. The estimated observation model is accordingly defined as:
+\begin{align}
+%   O: Q \times W \rightarrow \mathbb{Z} \\
+%   O: Q \times W \xrightarrow{\text{sensor}} \mathbb{Z} \\
+   \hat{O}(s, a, z; \, W_{occ,0}, W_{cov,0}): \, Q \times W \xrightarrow{\text{sensor}} \mathbb{Z} \\
+   \hat{O}(s, a, z; \, W_{occ,0}): \, Q \times W \xrightarrow{\text{sensor}} \mathbb{Z}
+\end{align}
+where $W_{occ,0}$ represents the world geometry prior based on the robot's sensing of the real world. This geometry prior is used to estimate neighborhood coverage $w_{cov}$ using ray-casting. While the world geometry $W_{occ,0}$ is known apriori, only by achieving a robot state $Q$ will the neighboring coverage status ("neighboring coverage states"?) of the world be revealed.   
 
+% $O: Q \times W \rightarrow \mathbb{Z}$. 
+% $O: Q \times W \xrightarrow{\text{sensor}} \mathbb{Z}$. % where $S$ is one edge length.
+% $\hat{O}(s, a, z; W_{occ,0}, W_{cov,0})$
 
-\ph{Observation} The observation $z \in \mathbb{Z}$ received by the robot are the nodes directly connected to node $q_t$. The observation model is defined as $O: Q \times W \rightarrow \mathbb{Z}$. % where $S$ is one edge length.
+\ph{Reward} The one-step estimated reward is computed as a function of the information gain and cost associated with an action:
+\begin{align}
+%   \hat{R}(s, a) = F(\text{info gain}(W_{cov}, z), \, \text{action penalty}(W_{occ}, a)): \, \mathbb{Q} \times  \mathbb{W} \times \mathbb{A} \rightarrow \mathbb{R} \\
+    \hat{R}(s, a) = \mathcal{F}\Big[\, \textit{Info\_Gain}(W_{cov}, z), \; \textit{Cost}(W_{occ}, a) \, \Big]: \, Q \times  W \times \mathbb{A} \rightarrow \mathbb{R} 
+    % \hat{R}(s, a) = \mathcal{F}\Big[\, I(W_{cov}, z), \; C(W_{occ}, a) \, \Big]: \, \mathbb{Q} \times  \mathbb{W} \times \mathbb{A} \rightarrow \mathbb{R}
+\end{align}
+Information gain is defined as the marginal gain of information: $\textit{Info\_Gain}(W_{cov}, z) = I(W_{cov} \cup z) - I(W_{cov})$, as the benefit of being in a state $s$ is dependent on whether the robot has already observed ``nearby" states in the world. The action cost can incorporate any robot behavior that increases exploration time. Action cost is a function of the world geometry $W_{occ}$ since this sub-state informs both the required actuator output (path length and velocity) and the proximity to the actuator's limitations (traversability risk) required to execute an action.
 
-$\hat{O}(s, a, z; W_{occ,0}, W_{cov,0})$
-
-\ph{Reward} $R: \mathbb{Q} \times \mathbb{W} \times \mathbb{A} \rightarrow \mathbb{R}$ \\
+% $R: \mathbb{Q} \times \mathbb{W} \times \mathbb{A} \rightarrow \mathbb{R}$ \\
 % $R(Q, W, a) = f(info_gain) - f(action_penalty)$
-$\hat{R}(s, a) = F(\text{info gain}(W_{cov}, z), \text{action penalty}(W_{occ}, a))$
+% $\hat{R}(s, a) = F(\text{info gain}(W_{cov}, z), \text{action penalty}(W_{occ}, a))$
 % $R(s, z) = F(\text{info gain}, \text{action penalty})$
 % $R(W_{cov}, W_{occ}, z, a) = F(\text{info gain}(W_{cov}, z), \text{action penalty}(W_{occ}, a))$
 
 % We define the graph reward as the reward gained by executing the graph-level policy $\pi^g$ from node $v$ as a function $R^g(v, \pi^g): V \times \Pi^g \to \mathbb{R}$. The reward function, as defined in Eq. (\ref{eq:reward}), includes costs associated with path length and risk and utility associated with the observation $z$ of previously uncovered nodes.
 
-
-\ph{Generative model}
-Estimated generative model
-$\hat{\mathcal{G}} = F(b_0) = F(p(W_{occ, 0}))$, a prior belief $b_0$
-
-$\hat{\mathcal{G}}: \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{S} \times \mathbb{Z} \times \mathbb{R}$
-
-$\hat{\mathcal{G}}(\cdot) = F(T(\cdot), O(\cdot), R(\cdot))$
-
-
-
-\ph{Policy} 
-
-General POMDP's policy (MAY NOT NEED THIS?)
+\ph{Generative model} The estimated generative model simulates the robot's interaction with world and returns a successor state $s'$, observation $z$, and reward $r$ for a given state-action pair $(s,a)$:
 \begin{align}
-  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
-  \label{eq:policy}
-  s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
+    \hat{\mathcal{G}}(\cdot) = \mathcal{F}(s, a; \, W_0) = \mathcal{F}\big[T(\cdot), O(\cdot), R(\cdot)\big]: \, \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{S} \times \mathbb{Z} \times \mathbb{R} 
+    % \hat{\mathcal{G}}(\cdot) = F(T(\cdot), O(\cdot), R(\cdot)) \\
+    % \hat{\mathcal{G}}: Q \times W \times \mathbb{A} \rightarrow Q \times W \times \mathbb{Z} \times \mathbb{R} 
 \end{align}
-where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+where $W_0 = (W_{cov,0}, W_{occ,0})$ is the world prior. 
+
+% $\hat{\mathcal{G}} = F(b_0) = F(p(W_{occ, 0}))$, a prior belief $b_0$
+% $\hat{\mathcal{G}}: \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{S} \times \mathbb{Z} \times \mathbb{R}$
+% $\hat{\mathcal{G}}(\cdot) = F(T(\cdot), O(\cdot), R(\cdot))$
+
+
+
+% \ph{Policy} 
+
+% General POMDP's policy (MAY NOT NEED THIS?)
+% \begin{align}
+%   \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
+%   \label{eq:policy}
+%   s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
+% \end{align}
+% where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
 
 % We define the output of the graph policy $\pi^g(v_i)$ to be a neighboring node $\theta=v_j$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i)$ induces a transition from nodes $v_i$ to $v_j$ with probability one:
 % \begin{align}
@@ -543,16 +553,13 @@ where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewar
 
 
 \subsection{Hierarchical Planning Structure} 
-The proposed hierarchical planner decomposes the problem into tractable subproblems by introducing a spatial and temporal discretization which restrict the behavior of the robot to a smaller, information-efficient search space. The hierarchical planner has two layers with different map representations. The higher layer, termed \emph{graph-level planner}, employs a sparse graph structure of dynamic size which spans the entirety of the known environment. The lower layer, termed \emph{lattice-level planner}, employs a dense grid structure of fixed dimensions which moves with the robot. 
-
-
-
+The proposed hierarchical planner decomposes the problem into tractable subproblems by introducing a spatial and temporal discretization which restricts the behavior of the robot to a smaller, information-efficient search space. The hierarchical planner has two layers with different environment representations. The higher layer, termed \emph{graph-level planner}, employs a sparse graph structure of dynamic size which spans the entirety of the known environment. The lower layer, termed \emph{lattice-level planner}, employs a dense grid structure of fixed dimensions which moves with the robot. 
 
 \subsection{Proposed Framework (GOOD NAME??)} 
 
 \subsubsection{Graph-Level Planner} 
 
-\ph{Environment Representation} We employ a sparse bidirectional graph structure $G = (V, E)$ that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V$ and edges $E$ are enriched with environmental information. Each node $v \in V$ has attached to it a feature vector containing the probability $p(occ(v))$ that the node is occupied and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. Each edge $e_{ij} \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i,v_j)$) of traversal between the connected nodes $v_i$ and $v_j$.
+\ph{Environment Representation} We employ a sparse bidirectional graph structure $G^g = (V^g, E^g)$ that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V^g$ and edges $E^g$ are enriched with environmental information. Each node $v^g \in V^g$ has attached to it a feature vector containing the probability $p(occ(v^g))$ that the node is occupied and the probability $p(cov(v^g))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. Each edge ${e_{ij}}^g \in E$ has attached to it a feature vector containing the probability $p(\rho({v_i}^g,{v_j}^g)$) of traversal between the connected nodes ${v_i}^g$ and ${v_j}^g$.
 
 % The IRM graph grows through the addition of new nodes and edges as the robot navigates to previously unexplored areas of the map. We distinguish between two types of nodes: breadcrumb nodes and frontier nodes. Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversable (low risk) space where the robot has previously explored, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$.
 
@@ -573,6 +580,10 @@ There are a dynamic number of actions for a given node.
 \ph{Environment Representation} We employ a rolling, fixed-sized lattice structure which is centered at the robot's current position. Like the graph structure, each node $v \in V$ has attached to it a feature vector containing the node position, probability of occupancy $p(occ(v))$, and the probability $p(cov(v))$ that the node was previously perceived by the robot's sensor suite $S$, constrained by viewing angle and distance. The lattice structure has pre-computed edge information -- each edge $e \in E$ has attached to it a feature vector containing the probability $p(\rho_{ij}) = f(p_{occ}(v_j), p_{occ}(v_i)) = f(v_i, v_j, p(occ(\cdot)))$ of traversal between connected nodes $v_i$ and $v_j$, computed from the probabilities of occupancy.
 
 \ph{State} Two-element tuple $s_t=(G_t, q_t)$ consisting of the current graph map $G_t$ and the node $q_t$ closest to the robot's current pose. Each node $v \in V$ stores its occupancy and coverage state.
+
+% (For LLP, $s = (W^L, Q^L = (q, \dot{q})$)
+% $\dot{q} = (q_t - q_{t-1})/dt$
+% reward($Q^L_t, a$)
 
 \ph{Observation} The observation $z \in \mathbb{Z}$ are nodes immediately visible from the robot's position subject to ray tracing. The observation model is defined as $O: q \times V^{occu} \times V^{cov} \rightarrow \mathbb{Z}$ where $S$ is pre-specified sensor range.
 
@@ -632,7 +643,25 @@ Given the lattice structure, there are 8 possible actions for a node internal to
 
 ----------------------------------------------------------------------
 
+The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
 
+
+\begin{align}
+%   \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{\infty} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t R(b_t, \pi(b_t)) \right] \\
+  s.t.~&~\rho(b_t,\pi(b_t)) < \psi(t)
+\end{align}
+
+\begin{align}
+    R(b_t, \pi(b_t)) &= \fn{f}\big[ \underbrace{I(m_t, q_t, a_t)}_{\text{Utility}} \, , \, \underbrace{\rho(m_t, q_t, a_t) \, , \, d(m_t, q_t, a_t)}_{\text{Cost}} \big]
+    \label{eq:reward}
+\end{align}
+where we define the following terms:
+\begin{itemize}[labelindent=0pt,labelwidth=1.25em,leftmargin=!]
+    \item $I(m_t, q_t, a_t)$: information gain agent perceives from environment from $b_t$ under policy $\pi(b_t)$. This can include newly observed environment surface area, artifact identification, or distinguishing geometric features allowing for the minimization of localization error.
+    \item $\rho(m_t, q_t, a_t)$: risk associated with the trajectory planned from $b_t$ under policy $\pi(b_t)$.
+    \item $d(m_t, q_t, a_t)$: robot actuator output required to execute the trajectory planned from $b_t$ under policy $\pi(b_t)$. This characterizes metrics such as distance traveled and velocity fluctuations during traversal. 
+\end{itemize}
 
 Our belief state is a two-element tuple $b=p(M,q)$ consisting of the partially observed map $M$ and the robot pose $q$.
 
@@ -642,10 +671,16 @@ Formally, an we define the lattice map as composed of grid cells:
 \begin{align}
   M = (\mathbf{m}^1, \mathbf{m}^2, \dots, \mathbf{m}^{N_M}),
 \end{align}
-where $\mathbf{m}^i$ is a random variable for the state of the $i$-th cell,
+where $\mathbf{m}^i$ is a random variable for the state of the $i$-th cell, such as the occupancy 
+
+
+More generally, $\mathbb{M}$ can be the cross space of multiple boolean and real variables which represent different attributes.
+
+
 i.e., $\mathbf{m}^i \in \mathbb{M}$, and
 $N_M$ is the total number of grid cells in the map.
 In the case of an occupancy grid map, $\mathbf{m}^i$ is a Bernoulli random variable with $\mathbb{M} = \{free, occupied\}$.  More generally, $\mathbb{M}$ can be the cross space of multiple boolean and real variables which represent different attributes.  For example, $\mathbb{M} = \{free, occupied\}\times\{artifact, no\, artifact\}\times [0,1] (risk)$.
+
 The value of $\mathbf{m}^i$ is often assumed to be static over time.
 
 
