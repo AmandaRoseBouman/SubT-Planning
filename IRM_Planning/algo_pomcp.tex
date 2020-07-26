@@ -1,0 +1,44 @@
+% \textbf{Separate POMCP algorithm -- SIMULATE ROLLOUT SEARCH}
+\begin{algorithm}[t!]
+\caption{Online Planning using POMCPs}
+\label{alg:pomcp}
+\begin{algorithmic}
+\REQUIRE initial state $s_0$
+\REQUIRE generative model $\mathcal{G}$
+\STATE Initialize MCTS tree $T_r$, globally accessible
+\STATE Function POMCP($s_0$)
+\WHILE{planning time remains}
+    % \item Initial state $s_0 \sim b_0$
+    \item Update $T_r$ with $SIMULATE(s_0, T_r.root, 0)$
+    \STATE Update the values and the number of visits by backpropagation from the leaf node to the root node
+  \ENDWHILE
+\\  
+\STATE Function SIMULATE(s,h,depth)
+\WHILE{depth < max depth}
+    \IF{$h \in T$}
+        \item add observation node h to $T_r$
+        \item add action node $ha$ to $T_r \forall a$ actions from h
+        \item return $ROLLOUT(s, h, depth)$
+    \ENDIF
+    \item choose action $a$ with maximum combined reward of exploration + UCT reward
+    \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
+    \item $R \gets r + \gamma\times SIMULATE(s', h', depth+1) $
+    \item update visit counts to observation node $h$, action node $ha$, value function $V(ha)$
+    \item return $R$
+\ENDWHILE
+\\
+\STATE Function ROLLOUT(s, h, depth)
+\WHILE{depth < max depth}
+    \item $a \sim \pi_{rollout}(h)$ \# random action, or your customised domain-specific rollout
+    \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
+    \item return $r + \gamma \times ROLLOUT(s', h', depth+1)$
+\\
+\STATE Function $\hat{\mathcal{G}}$(s, a; $W_{occ}$)
+    \item s' $\gets$ T(s, a, $W_{occ}$)
+    \item o $\gets$ O(s.$W_{cov}$, s'.$W_{cov}$, s'.Q, $W_{occ}$)
+    \item r $\gets$ R(...)
+    \RETURN (s', o, r)
+\ENDWHILE
+
+\end{algorithmic}
+\end{algorithm}
