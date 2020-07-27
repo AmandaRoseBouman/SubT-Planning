@@ -6,20 +6,20 @@
 \begin{multicols}{2}
 \begin{algorithmic}
 \STATE \textbf{Function HierarchicalPlan}
-\REQUIRE Beliefs $b^g$, $b^l$ of states $s=(G, Q)$
-\REQUIRE World configuration $W$
-\STATE Optional rollout policy $\pi_{rollout}$
+\item Beliefs $b^g$, $b^l$ of states $s=(G, Q)$
+\item World configuration $W$
+\item Optional rollout policy $\pi_{rollout}$
 \REPEAT
-    \STATE \textbf{Global level planner}
+    \STATE \textbf{\# Global level planner}
     \item  Obtain world information map
-    \item Estimate $\hat{\mathcal{G}}^g$; create high-level POMDP
+    \item Estimate $\hat{\mathcal{G}}^g$
     \item $\theta^l_{t:T} \gets \textsc{POMCP}(b^g, \hat{\mathcal{G}^g}, \pi_{rollout})$
-    \STATE \textbf{Low level planner}
+    \STATE \textbf{\# Low level planner}
     \item Obtain local information map
-    \item Estimate $\hat{\mathcal{G}}^l$; create low-level POMDP
+    \item Estimate $\hat{\mathcal{G}}^l$
     \item $a_{t:T}^{*l} \gets \textsc{POMCP}(b^l;\hat{\mathcal{G}}^l, \theta^l_{t:T}, \pi_{rollout})$ 
     % \item \#learn value function and get best actions
-    \STATE \textbf{Executive}
+    \STATE \textbf{\# Executive}
     \item Execute $a_{t:T}^{*l}$
     \item Obtain $O$ from sensors
     \item Update $Q$, $W$

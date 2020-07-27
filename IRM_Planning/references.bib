@@ -48,6 +48,68 @@
 
 @string{ai = "Artificial Intelligence"}
 
+@article{krusi2017driving,
+  title={Driving on point clouds: Motion planning, trajectory optimization, and terrain assessment in generic nonplanar environments},
+  author={Kr{\"u}si, Philipp and Furgale, Paul and Bosse, Michael and Siegwart, Roland},
+  journal={Journal of Field Robotics},
+  volume={34},
+  number={5},
+  pages={940--984},
+  year={2017},
+  publisher={Wiley Online Library}
+}
+@inproceedings{rankin2009stereo,
+  title={Stereo-vision-based terrain mapping for off-road autonomous navigation},
+  author={Rankin, Arturo L and Huertas, Andres and Matthies, Larry H},
+  booktitle={Unmanned Systems Technology XI},
+  volume={7332},
+  pages={733210},
+  year={2009},
+  organization={International Society for Optics and Photonics}
+}
+
+@article{otsu2019fast,
+  title={Fast approximate clearance evaluation for rovers with articulated suspension systems},
+  author={Otsu, Kyohei and Matheron, Guillaume and Ghosh, Sourish and Toupet, Olivier and Ono, Masahiro},
+  journal={Journal of Field Robotics},
+  publisher={Wiley Online Library}
+}
+
+@InProceedings{pmlr-v87-jain18a,
+  title = 	 {Efficient Hierarchical Robot Motion Planning Under Uncertainty and Hybrid Dynamics},
+  author = 	 {Jain, Ajinkya and Niekum, Scott},
+  booktitle = 	 {Proceedings of The 2nd Conference on Robot Learning},
+  pages = 	 {757--766},
+  year = 	 {2018},
+  editor = 	 {Billard, Aude and Dragan, Anca and Peters, Jan and Morimoto, Jun},
+  volume = 	 {87},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {},
+  month = 	 {29--31 Oct},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v87/jain18a/jain18a.pdf},
+  url = 	 {http://proceedings.mlr.press/v87/jain18a.html},
+  abstract = 	 {Noisy observations coupled with nonlinear dynamics pose one of the biggestchallengesinrobotmotionplanning. Bydecomposingnonlineardynamics into a discrete set of local dynamics models, hybrid dynamics provide a natural way to model nonlinear dynamics, especially in systems with sudden discontinuities in dynamics due to factors such as contacts. We propose a hierarchical POMDP planner that develops cost-optimized motion plans for hybrid dynamics models. The hierarchical planner first develops a high-level motion plan to sequence the local dynamics models to be visited and then converts it into a detailed continuous state plan. This hierarchical planning approach results in a decomposition of the POMDP planning problem into smaller sub-parts that can be solved with significantly lower computational costs. The ability to sequence the visitation of local dynamics models also provides a powerful way to leverage the hybrid dynamics to reduce state uncertainty. We evaluate the proposed planner on a navigation task in the simulated domain and on an assembly task with a robotic manipulator, showing that our approach can solve tasks having high observation noise and nonlinear dynamics effectively with significantly lower computational costs compared to direct planning approaches. }
+}
+
+@InProceedings{pmlr-v87-shan18a,
+  title = 	 {Bayesian Generalized Kernel Inference for Terrain Traversability Mapping},
+  author = 	 {Shan, Tixiao and Wang, Jinkun and Englot, Brendan and Doherty, Kevin},
+  booktitle = 	 {Proceedings of The 2nd Conference on Robot Learning},
+  pages = 	 {829--838},
+  year = 	 {2018},
+  editor = 	 {Billard, Aude and Dragan, Anca and Peters, Jan and Morimoto, Jun},
+  volume = 	 {87},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {},
+  month = 	 {29--31 Oct},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v87/shan18a/shan18a.pdf},
+  url = 	 {http://proceedings.mlr.press/v87/shan18a.html},
+  abstract = 	 {We propose a new approach for traversability mapping with sparse lidar scans collected by ground vehicles, which leverages probabilistic inference to build descriptive terrain maps. Enabled by recent developments in sparse kernels, Bayesian generalized kernel inference is applied sequentially to the related problems of terrain elevation and traversability inference. The first inference step allows sparse data to support descriptive terrain modeling, and the second inference step relieves the burden typically associated with traversability computation. We explore the capabilities of the approach over a variety of data and terrain, demonstrating its suitability for online use in real-world applications. }
+}
+
+
 @inproceedings{AL16,
 	Author = {Aine, Sandip and Likhachev, Maxim},
 	Booktitle = icaps,
