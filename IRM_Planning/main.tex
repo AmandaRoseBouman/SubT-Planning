@@ -520,25 +520,51 @@ where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Problem Description: Coverage of Unknown Environment}
 
+FORMAL DESCRIPTION, MORE SYMBOLS
+
 % (intro) solve as POMDP so we can account for uncertainty in map
 % (Q1 in sec4) computation challenge
 % (Answer in sec5) Is hierarchical because POMDP is too hard to solve for large environment over large time scales
 % (Q2 in sec4) coverage in unknown
 % (A2 in sec5)
 
-\ph{Problem} The coverage problem aims to find a trajectory for a that passes through all points in the free space of a domain. We can generalize this problem to one where the objective is to determine a path through a subset of the points such that every point in the domain is observable from the path. The coverage problem is further complicated when a time constraint is applied and the domain is not known a priori, resulting in two competing objectives: the need to cover the known area and the need to explore in order to reveal the unknown area.
+\ph{stodchast blind TCP} 
 
-\ph{Why POMDP} Coverage of an unknown environment can be modeled as a POMDP where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing spatial uncertainty. By predicting how future sensor information and vehicle control will affect its world belief, the agent can make long-horizon, near-optimal decisions that are robust to environment uncertainty. 
+Stochastic Blind Covering Salesman Problem \\
+
+%\ph{Problem} The traditional coverage problem is to find a trajectory that passes through all points in the a free space of a domain. %6
+Given a pre-konwn discrete space $X$, the aim of the traditional coverage problem is to find a trajectory $\sigma$ that passes through all ....  free space $X_{free}\subset X$. 
+%We can generalize this problem to one where the objective is to determine a path through a subset of the points such that every point in the domain is observable from the path.
+We extend this definition to sensor-based coverage in 
+continuous spaces (SCCS), where the objective is to determine a path through a subset of the space such that sensor FOV $F$ along the path covers the space, i.e., $\cup F_k = X$ % every point in the domain is observable from the path. %6
+
+In this paper, we introduce and address teh  more general progelm of 
+Time-constraint cvonering salmesan problem (TCCS), where 
+
+The coverage problem is further complicated when a time constraint is applied and the domain is not known a priori, resulting in two competing objectives: the need to cover the known area and the need to explore in order to reveal the unknown area. % 3
+% The coverage problem is further complicated when a time constraint is applied and the domain is not known a priori, resulting in two competing objectives: the need to cover the known area and the need to explore in order to reveal the unknown area. % 3
+
+\ph{Challenges wihte sbTCP} 
 
 In our POMDP framework, the environment is only partially observable to the robot due to its limited FOV. In a receding horizon fashion, we can find paths that cover the known space very efficiently, and we design the reward function to balance complete coverage and exploration.
 
-\ph{Traditional Map Representation} The belief state for this coverage POMDP is $b = p(M, x)$ where $M$ is the map state and $x$ is the robot state. Traditionally, $M$ is defined as an occupancy map composed of grid cells  $m = \{\textbf{m}_i\}$ where $\mathbf{m}_i$ is a random variable representing some state (i.e. occupancy, coverage) of the $i$-th cell. In order to compute the posterior probability $p(M | z_{1:t}, x_{1:t})$ of the whole map $M$, given the robot's measurements $z_{1:t}$ and trajectory $x_{1:t}$, the cell states are traditionally approximated as binary with full independence between them \cite{TBF05,elfes1990stochastic}.
+%\ph{Why POMDP}
+Coverage of an unknown environment can be modeled as a POMDP where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing spatial uncertainty. By predicting how future sensor information and vehicle control will affect its world belief, the agent can make long-horizon, near-optimal decisions that are robust to environment uncertainty. 
 
-\ph{Computational Challenges} Even with these approximations to the coverage belief state, solving Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning fashion. 
 
-\textbf{TRANSITION??}
+\ph{Traditional Map Representation} The belief state for this coverage POMDP is $b = p(M, x)$ where $M$ is the map state and $x$ is the robot state. We model $M$ as an occupancy map composed of grid cells  $m = \{\textbf{m}_i\}$ where $\mathbf{m}_i$ is a random variable representing some state (i.e. occupancy, coverage) of the $i$-th cell. In order to compute the posterior probability $p(M | z_{1:t}, x_{1:t})$ of the whole map $M$, given the robot's measurements $z_{1:t}$ and trajectory $x_{1:t}$, the cell states are traditionally approximated as binary with full independence between them \cite{TBF05,elfes1990stochastic}. %6
 
-\ph{POMCP}
+\ph{sbtcp formualtion}
+
+%\ph{Computational Challenges} 
+Even with these approximations to the coverage belief state, solving Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning fashion. 
+
+
+\ph{high-level objective}
+The objective are twofold: to approximate... and to solve...
+
+
+\ph{no access to the ground-truth generative model}
 POMCP \cite{silver2010monte} is based on a Monte Carlo Tree Search which employs a generative model (i.e., a black box simulator of POMDP) in order to eliminate the need for explicit probabilistic representations that account for motion and sensing uncertainty. During each simulation, the initial state is sampled from the state belief, and the generative model provides a sample of the successor state, observation, and reward by adding noise to the output of a ground-truth model. However, in unknown-space exploration domains, the true state of the world is not known, so an alternative generative model is employed which uses a posterior distribution of the state based upon the most recently gathered sensor data in receding horizon manner. 
 
 
@@ -583,6 +609,7 @@ POMCP \cite{silver2010monte} is based on a Monte Carlo Tree Search which employs
 
 In this work, we propose a novel framework of hierarchical coverage planner in a POMDP setting.
 % It has two key components, an abstract coverage planner and a hierarchical planning structure, which will be introduced in the following subsections in details.
+
 The main contributions are in two-fold---an abstract coverage planner and a hierarchical planning structure, which will be introduced in the following subsections in details.
 
 
@@ -607,7 +634,8 @@ The main contributions are in two-fold---an abstract coverage planner and a hier
 % (POMDP + Abstract state representation)
 % Maintains belief over the robot and world representation
 %
-We present an \textit{Abstract Coverage Planner} that solves for the sequential action selection for coverage in unknown environments, given an abstract environment representation.
+We present an \textit{Abstract Coverage Planner} that solves for the sequential action selection for coverage in unknown environments, given an abstract environment representation. %2
+
 It formulates the coverage problem under motion and sensing uncertainty in unknown environments as a POMDP problem, and finds the best action sequence through learning of the value function of each robot state and world coverage state pair in the abstract representation.
 
 \ph{Advantage (POMDP)} \\
@@ -646,6 +674,8 @@ We present the following POMDP formulation for our proposed abstract information
 % \end{itemize}
 
 
+
+MOVE THESE TO PROBLEM DEFINITION/REPRESENTATION
 
 \ph{System Representation} The system (robot + world) is represented by an abstract graph structure $W = (V, E)$, consisting of nodes $v \in V$ and edges $e \in E$.
 
@@ -786,11 +816,9 @@ Output of low-level policy is some concrete controller to move robot.. so its co
 
 $r^g(b^g, \theta^l)$ is (lower bound) approximation of $r^l(b^l, \pi^l(b^l; \theta^l))$.
 
-\gautam{How to relate bg and bl?}
-
 At the high-level, we assume that $\pi^l$ is fixed and thus only optimize over $\pi^g$, which implies optimizing at the node-to-node level. However later we will show how we optimize over $\pi^l$ as well.
 
-
+MESSAGE: Decomposed for tractability ...
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
