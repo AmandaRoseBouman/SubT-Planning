@@ -23,6 +23,8 @@
 \usepackage{mathtools}
 \usepackage{todonotes}
 \usepackage{enumitem}
+\usepackage{multicol}
+% \usepackage[noend]{algpseudocode} % this breaks my algorithm box
 
 \usepackage{tikzpagenodes}
 
@@ -42,8 +44,11 @@
 % }
 
 \title{
+PLGRIM: 
 Perception-aware and Risk-cognizant Planning Under Uncertainty for Autonomy in Extreme Environments
 }
+% PLGRIM (pilgrim): Planning at Local and Global levels with Robust Information Maps
+
 
 % The \author macro works with any number of authors. There are two
 % commands used to separate the names and addresses of multiple
@@ -116,7 +121,8 @@ In order for robots to achieve a useful level of autonomy in novel environments,
 \gautam{Need to update. possible phrases: active learning, online planning, planning under uncertainty, learning value function in POMDP, MCTS, }
 \end{abstract}
 
-\gautam{Name suggestion: PLGRM: Planning at Local and Global level with Road Maps. Pronounced pilgrim}
+\gautam{PLGRIM (pilgrim): Planning at Local and Global levels with Robust Information Maps}
+\gautam{Name suggestion: PLGRM: Planning at Local and Global levels with Road Maps. Pronounced pilgrim}
 
 % Two or three meaningful keywords should be added here
 \keywords{CoRL, Robots, Learning} 
@@ -303,9 +309,9 @@ In order for robots to achieve a useful level of autonomy in novel environments,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-\ph{High-level mission} Consider a robot tasked to explore and search a GPS-denied environment, under given time constraints. Creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements are essential elements of an autonomy architecture needed to realize such a mission.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
+\ph{High-level mission} Consider a large-scale coverage mission in a unknown environment. A robot tasked to explore and search a GPS-denied unknown area, (under given time constraints?). Creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements are essential elements of an autonomy architecture needed to realize such a mission.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
 
-\ph{An illustrative example} Consider the situation where a robot explores a corridor with two doorways leading to unknown areas.  The first doorway is narrow, but leads to a large, unexplored area, away from areas the robot has already explored.  The second doorway is wider and leads to what the robot can sense from a long range is a small room.  In order for the robot to make a good decision about which door to explore, it needs to take into account the uncertainty of its knowledge of each doorway, the risk involved in traversal, the time it takes to traverse, and the expected new information the robot hopes to gain in the future.  Furthermore, the robot should plan beyond the horizon of its current sensing range, and decide on the order in which to explore the doorways.  The robot will also need to update its plan at a high frequency should the situation change (e.g. due to dynamic obstacles, changing mission constraints, time limits, etc.) (see Figure \ref{fig:firstPage}).
+% \ph{An illustrative example} Consider the situation where a robot explores a corridor with two doorways leading to unknown areas.  The first doorway is narrow, but leads to a large, unexplored area, away from areas the robot has already explored.  The second doorway is wider and leads to what the robot can sense from a long range is a small room.  In order for the robot to make a good decision about which door to explore, it needs to take into account the uncertainty of its knowledge of each doorway, the risk involved in traversal, the time it takes to traverse, and the expected new information the robot hopes to gain in the future.  Furthermore, the robot should plan beyond the horizon of its current sensing range, and decide on the order in which to explore the doorways.  The robot will also need to update its plan at a high frequency should the situation change (e.g. due to dynamic obstacles, changing mission constraints, time limits, etc.) (see Figure \ref{fig:firstPage}).
 
 \begin{figure}[t!]
   \centering
@@ -327,13 +333,65 @@ In order for robots to achieve a useful level of autonomy in novel environments,
 % rviz
 % DIAGRAM like Fig.~\ref{fig:architecture}
 
+% \if 0
+% The above-mentioned mission
+% large-scale coverage in unknown space
+% active learning under uncertainty
+%
+% two main challenges:
+% 1) simultaneous optimization of information gathering and action cost; how to optimize this for a longer horizon?
+% 2) high computational complexity for 1) with a long horizon; how to solve a large-scale problems?
+%
+% our contribution:
+% 1) POMDP solver
+%   a) long-horizon coverage planning with POMDP formulation 
+%   b) with no access to the ground-truth generative model
+%   => improved optimality in coverage in unknown space
+% 2) Hierarchical structure
+%   a) construct representation-rich abstract graph/roadmap at each hierarchical level
+%   b) formalize POMDP planners to work on abstract graph representation
+%   c) employ a hierarchical structure and connect the two levels of planner seamlessly
+%   => solve larger coverage problems
+% \fi
 
-\ph{[WIP] Approach}
-Large-scale coverage in unknown space? Online, active learning problem!
-Probabilistic sequential decision making to maximize the average-case expected rewards by exploiting the current confidence about the environment at run time.
-(As in a receding horizon control fashion, it interleaves the decision making and action execution phases.
-At each decision making phase, it internally learns the value of each action sequence by interacting with the generative model of the system.
-Once a decision is made, it will execute the selected action and get another observation along with the actual reward.)
+
+\ph{Problem description--learning perspective}
+A coverage planning problem in a large-scale unknown space can be considered an active learning problem under uncertainty where the objective to find the best action sequence to maximize the accumulated reward over time.
+As in the usual active learning setting, there are not many data points at start, and more data can only be collected once the selected action is executed.
+Thus, the action selection should exploit the currently learned model (or belief) to maximize the rewards by efficient exploration.
+Note that while the traditional active learning focuses on the exploration of the search space, this coverage problem needs to balance between exploration and exploitation since the robot operating under motion and sensing uncertainty is often safety-critical. 
+
+\ph{Problem description--POMDP perspective}
+From a different perspective, we can also cast this coverage problem as a Partially Observable Markov Decision Process (POMDP) problem. 
+A POMDP is a principled formalization of sequential decision making process under motion and sensing uncertainty.
+It employs the underlying intrinsic model of the sequential action-observation process under uncertainty, so that it can (asymptotically) converges to the optimal solution in a more sample-efficient manner than the model-free learning approaches.
+
+
+---WORK-IN-PROGRESS---
+
+two main challenges:
+1) simultaneous optimization of information gathering and action cost; how to optimize this for a longer horizon?
+2) high computational complexity for 1) with a long horizon; how to solve a large-scale problems?
+
+our contribution:
+1) POMDP solver
+  a) long-horizon coverage planning with POMDP formulation 
+  b) with no access to the ground-truth generative model
+  => improved optimality in coverage in unknown space
+2) Hierarchical structure
+  a) construct representation-rich abstract graph/roadmap at each hierarchical level
+  b) formalize POMDP planners to work on abstract graph representation
+  c) employ a hierarchical structure and connect the two levels of planner seamlessly
+  => solve larger coverage problems
+
+% \ph{[WIP] Approach}
+% Large-scale coverage in unknown space? Online, active learning problem!
+% Probabilistic sequential decision making to maximize the average-case expected rewards by exploiting the current confidence about the environment at run time.
+% (As in a receding horizon control fashion, it interleaves the decision making and action execution phases.
+% At each decision making phase, it internally learns the value of each action sequence by interacting with the generative model of the system.
+% Once a decision is made, it will execute the selected action and get another observation along with the actual reward.)
+
+---OLDER TEXT---
 
 \ph{Generic formulation}
 The above-mentioned mission in its most general form can be cast as a POMDP, where the robot's belief of both its own position and the environment are a function of the history of the robot's actions and observations.  
@@ -378,7 +436,7 @@ Thus, it is highly subject to local minima (i.e., not being able to make any pro
 
 
 \ph{Coverage--(Model-free) RL-based approaches}
-Reinforcement Learning has been applied to solve exploration by using rewards internal to the agent. \citet{pathak_icm} proposed an Intrinsic Curiosity Module which is formulated with 'surprise'; the more difference between your predicted and actual states, the more the internal curiosity reward of the agent. This can fail in certain situations. The most popular experiment on this was from \cite{burda2018study}, where an agent is dropped in an environment where it can move but also change channels on a TV (if it is near the TV). The agent would just be drawn to the TV because changing the channels constantly gave it a new visual reward and it wouldn't explore the rest of the map. This was known as a 'couch-potato' behaviour of the exploratory agent. Thus, the agent was curious, in a sense, but not productive in exploring the map.
+Reinforcement Learning (RL) has been applied to solve exploration by using rewards internal to the agent. \citet{pathak_icm} proposed an Intrinsic Curiosity Module which is formulated with 'surprise'; the more difference between your predicted and actual states, the more the internal curiosity reward of the agent. This can fail in certain situations. The most popular experiment on this was from \cite{burda2018study}, where an agent is dropped in an environment where it can move but also change channels on a TV (if it is near the TV). The agent would just be drawn to the TV because changing the channels constantly gave it a new visual reward and it wouldn't explore the rest of the map. This was known as a 'couch-potato' behaviour of the exploratory agent. Thus, the agent was curious, in a sense, but not productive in exploring the map.
 
 \citet{ECR2018} proposed agents that mark parts of the map as 'far away' in an effort to deincentivize single-step jumps such as changing a TV channel. These agents go through the environment and are only rewarded for observations that are relatively far away from the current observation. While this is a potential solution for the couch-potato effect, we now need to track potential landmarks where the agent has been to keep track of which parts are already explored. But there is no such memory for the agent. Instead the environment stores the list visited landmarks and gives the agent an augmented reward based on proximity to currently explored landmarks.
 
@@ -398,7 +456,7 @@ In unknown-space exploration domains, several techniques have been applied in PO
 Gaussian belief assumption direct policy search scheme are employed in \cite{martinez2009bayesian} and \cite{indelman2015planning}.
 \citet{Lauri2016planning} extended this to non-Gaussian belief modeling based on POMCP (Partially Observable Monte-Carlo Planning) \cite{silver2010monte} algorithm that uses particle filtering a Monte-Carlo Tree Search.
 It also used the direct policy search approach to generate possible action sequences with a Gaussian kernel.
-Still with such techniques for approximation, the POMDP-based approach does not scale well due to the curse of history \cite{Pineau03}.
+Still with such techniques for approximation the POMDP-based approach does not scale well due to the curse of history \cite{Pineau03}.
 
 % Decentralized MCTS for team orienteering problem \cite{bestproblem2019dec}
 % Cannot scale well with the belief space size... (local planning only)
@@ -416,14 +474,12 @@ Hierarchical planning structures are to scale up the problem by employing multip
 This approach has also been applied to the exploration and coverage domains.
 %
 \citet{umari2017autonomous} applied the hierarchical structure to the frontier-based exploration, so that the higher level frontier exploration module can guide the lower level frontier exploration module.
-In \cite{dang2019explore}, the lower level module is extended to a frontier selection algorithm considering the information gain along the path.
-\citet{Lauri2016planning} replaced the lower level module by a POMDP-based planner, so that the local coverage performance can be improved 
+In \cite{dang2019explore}, the lower level module is extended to a more sophisticated frontier selection algorithm considering the information gain along each path.
+\citet{Lauri2016planning} replaced the lower level module by a POMDP-based planner, so that the local coverage performance can be improved via non-myopic planning.
 
-
-% Hierarchical (online-offline) POMDP solver, for navigation, not for coverage planning
-% \cite{kim2019bi}
-
-% Hierarchical Monte-Carlo planning \cite{vien2015hierarchical}
+In the POMDP area, several works also showed the benefits of hierarchical structure.
+\citet{vien2015hierarchical} proposed a hierarchical POMCP framework and demonstrated it outperforms Bayesian model-based hierarchical RL approaches in some benchmarks.
+In \cite{kim2019bi}, hierarchical online-offline POMDP solver is proposed for risk-aware navigation planning, and showed synergy in the performance from global- and local-level planners.
 
 
 
@@ -462,42 +518,57 @@ where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewar
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Exploration-Coverage Planning Problem}
+\section{Problem Description: Coverage of Unknown Environment}
 
-\ph{Intro} Exploration and coverage of a partially-revealed environment can be modeled as a Partially Observable Markov Decision Process (POMDP) where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing environment belief uncertainty. By predicting how future sensor information and vehicle control will affect this belief, the agent can make near-optimal decisions that are robust to environment uncertainty. Our objective is to find the policy that minimizes the time required to completely cover a large, unknown environment.
+% (intro) solve as POMDP so we can account for uncertainty in map
+% (Q1 in sec4) computation challenge
+% (Answer in sec5) Is hierarchical because POMDP is too hard to solve for large environment over large time scales
+% (Q2 in sec4) coverage in unknown
+% (A2 in sec5)
 
-\ph{Traditional Map Representation} The belief state for this exploration-coverage POMDP is $b = p(M, x)$ where $M$ is the map state and $x$ is the robot state. Traditionally, $M$ is defined as an occupancy map composed of grid cells:
-\begin{align}
-    m = \{\textbf{m}_i\}
-\end{align}
-where $\mathbf{m}_i$ is a random variable representing the state (i.e. occupancy, coverage) of the $i$-th cell. The goal of belief grid mapping is to compute the posterior probability of the state of the whole map $M$, given the observations $z_{1:t}$ and robot trajectory $x_{1:t}$ up to time $t$:
-\begin{align}
-  p(M | z_{1:t}, x_{1:t}),
-\end{align}
-Unfortunately, it is usually intractable to compute directly from $M$ due to its complexity of $2^{|M|}$. So, the belief grid map is often assumed to be a Markov random field of order 0 in which the belief probability of each grid cell is independent \cite{TBF05,elfes1990stochastic}.
-With the cell independence assumption, $p(M | z_{1:t}, x_{1:t})$ can be determined from the individual cell state probability, $p(\mathbf{m}_i | z_{1:t}, x_{1:t})$.
+\ph{Problem} The coverage problem aims to find a trajectory for a that passes through all points in the free space of a domain. We can generalize this problem to one where the objective is to determine a path through a subset of the points such that every point in the domain is observable from the path. The coverage problem is further complicated when a time constraint is applied and the domain is not known a priori, resulting in two competing objectives: the need to cover the known area and the need to explore in order to reveal the unknown area.
 
-In the main
-body of literature, occupancy grids are used to store binary
-occupancies. Noisy sensors 
-Most occupancy grid mapping methods decompose the full
-mapping problem into many binary estimation problems
-on individual voxels assuming full independence between
-voxels
+\ph{Why POMDP} Coverage of an unknown environment can be modeled as a POMDP where the agent maintains a belief about its environment and plans a sequence of actions with the ultimate goal of minimizing spatial uncertainty. By predicting how future sensor information and vehicle control will affect its world belief, the agent can make long-horizon, near-optimal decisions that are robust to environment uncertainty. 
 
-\ph{Computational Challenges} The problem in Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning horizon. 
+In our POMDP framework, the environment is only partially observable to the robot due to its limited FOV. In a receding horizon fashion, we can find paths that cover the known space very efficiently, and we design the reward function to balance complete coverage and exploration.
+
+\ph{Traditional Map Representation} The belief state for this coverage POMDP is $b = p(M, x)$ where $M$ is the map state and $x$ is the robot state. Traditionally, $M$ is defined as an occupancy map composed of grid cells  $m = \{\textbf{m}_i\}$ where $\mathbf{m}_i$ is a random variable representing some state (i.e. occupancy, coverage) of the $i$-th cell. In order to compute the posterior probability $p(M | z_{1:t}, x_{1:t})$ of the whole map $M$, given the robot's measurements $z_{1:t}$ and trajectory $x_{1:t}$, the cell states are traditionally approximated as binary with full independence between them \cite{TBF05,elfes1990stochastic}.
+
+\ph{Computational Challenges} Even with these approximations to the coverage belief state, solving Eq. (\ref{eq:optimal_policy}) is intractable because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the map $M$, and 2) the large timescale $L$, since the complexity of the search space grows exponentially with time. To obtain a tractable solution, we discretize both the belief space $b=p(M,x)$ as well as the planning fashion. 
+
+\textbf{TRANSITION??}
+
+\ph{POMCP}
+POMCP \cite{silver2010monte} is based on a Monte Carlo Tree Search which employs a generative model (i.e., a black box simulator of POMDP) in order to eliminate the need for explicit probabilistic representations that account for motion and sensing uncertainty. During each simulation, the initial state is sampled from the state belief, and the generative model provides a sample of the successor state, observation, and reward by adding noise to the output of a ground-truth model. However, in unknown-space exploration domains, the true state of the world is not known, so an alternative generative model is employed which uses a posterior distribution of the state based upon the most recently gathered sensor data in receding horizon manner. 
 
 
-\ph{[WIP] Coverage in unknown space}
-Even worse, ...
+% This substitution of the ground-truth prior with the most up-to-date belief imposes additional challenges when applying the POMDP formulation to unknown-space coverage domains BECAUSE..
+% However, during unknown-space coverage planning, we don't have access to the true state of the world, thus we instead use the robot's true sensor measurements of its environment as our ground-truth model. 
+% No access to GT, using prior
+% But, what's the limitation from this approach?
+% - not as accurate as GT
+% - ...
 
-A POMDP problem where its explicit or generative model is not available.
-Note POMCP \cite{silver2010monte} is a breakthrough that employed a generative model (i.e., a black box simulator) in POMDPs to eliminate the need for explicit mathematical models for motion and sensing under uncertainty.
-However, even POMCP algorithm requires access to the ground-truth generative model.
+%%%%%% CITATION ADDED %%%%%
+%%%%%% take a look at this page for some explanation/terms in RL:
+%%%%%% https://ieeexplore.ieee.org/iel7/6895053/6906581/06907423.pdf?casa_token=aQK6RIfQAL0AAAAA:yVuS-SLSxozba3B0sCXzxHqoBgxoPIb3jtY3VUaEvssDGtoWAN3P6i6QDlzNZ97A2DGVdsbQZg
+% Why [up-to-date belief] as a [prior]? What is the [rational] behind it?
+% - KWIK (know what it knows) heuristic/strategy \cite{li2011knows}
+% - optimism in the face of uncertainty \cite{brafman2002r}
 
-...
 
-Thus, this imposes additional challenges when applying the POMDP formulation to unknown-space coverage domains.
+
+% The generative model in traditional POMCP requires a ground truth from which the state transition and observations are sampled from.   samples the state belief in order to estimate long-term reward for large and complex systems.   
+
+% Even worse, ...
+
+% A POMDP problem where its explicit or generative model is not available.
+% Note POMCP \cite{silver2010monte} is a breakthrough that employed a generative model (i.e., a black box simulator) in POMDPs to eliminate the need for explicit mathematical models for motion and sensing under uncertainty.
+% However, even POMCP algorithm requires access to the ground-truth generative model.
+
+% ...
+
+% Thus, this imposes additional challenges when applying the POMDP formulation to unknown-space coverage domains.
 
 
 
@@ -676,7 +747,7 @@ where $W_0 = (W_{cov,0}, W_{occ,0})$ is the world prior.
 
 \subsection{Hierarchical Planning Structure} 
 \ph{Intro} The proposed hierarchical planner decomposes the problem into tractable subproblems by introducing a spatial and temporal discretization which restricts the behavior of the robot to a smaller, information-efficient search space. The hierarchical planner has two layers with different environment representations. The higher layer, termed \emph{graph-level planner}, employs a sparse graph structure of dynamic size which spans the entirety of the known environment. The lower layer, termed \emph{lattice-level planner}, employs a dense grid structure of fixed dimensions which moves with the agent. 
-\textcolor{red}{(Sung) Yes, I think we can start using graph-level planner and lattice-level planner from this point. Otherwise, we need to explain the very similar relationship in Technical Details section again..}
+% \textcolor{red}{(Sung) Yes, I think we can start using graph-level planner and lattice-level planner from this point. Otherwise, we need to explain the very similar relationship in Technical Details section again..}
 
 \ph{Policy} The high level policy maps the high-level belief state $b^g$ to a controller specific parameter $\theta^l \in \Theta^l$ 
 \begin{align}
@@ -773,15 +844,22 @@ POMCP-*LP(Q, G, $\hat{\mathcal{G}}$)
 
 
 
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=.6\textwidth]{figures/SystemOverview.png}
+  \caption{[WIP] System overview}
+  \label{fig:system_overview}
+\end{figure}
+
 FIGURE: System Diagram
 Input source to Graph-level Planner and Lattice-level Planner 
 Connection between GLP and LLP
 (move\_base)-level motion planner
 
-?? NEED TO MENTION SLAM MODULE??
+% ?? NEED TO MENTION SLAM MODULE??
 
 
-See \url{https://docs.google.com/presentation/d/1DfS1T1_o_xenJ4o8x-9D0Uq-EO1xwyToqdSEE_V9eyU/edit#slide=id.g8cd3872972_2_0} for figure draft.
+% See \url{https://docs.google.com/presentation/d/1DfS1T1_o_xenJ4o8x-9D0Uq-EO1xwyToqdSEE_V9eyU/edit#slide=id.g8cd3872972_2_0} for figure draft.
 
 
 \subsection{Graph-Level Planner} 
@@ -886,43 +964,45 @@ To account for the distance discrepancy between a lateral and diagonal action, w
 \end{align}
 
 
-\subsubsection{Algorithm: NAME?? PLGRM: Planning at Local and Global level with Road Maps}
+\subsection{Algorithm: NAME?? PLGRM: Planning at Local and Global level with Road Maps}
 
 Here we explain how the two instances of abstract coverage planners (graph-level and lattice-level planners) are combined and interact with each other in a unified framework...
+
+Receding horizon control
+
+
+
 \subsubsection{Global Level}
-Here, Qg = robot q and $\dot{q]}$. Gg = Simple bidirectional graph.
-Generative model $\mathcal{G}$ is 
+World represented as a graph. W = Simple bidirectional graph
+
+$s^g = (Q^g, G^g)$. $G^g \sim W?$. Here, $Q^g$ = robot node $q \in V^g$ vertices  and $\dot{q}$ is velocity vector.
+
+Generative model $\mathcal{G}$ is explained.
+
+Rollout policy $\pi_{rollout}$ is random or Dijkstra-based to reach next unexplored node
+
+Output of GLP is $\theta^l_t$, which gives a goal position to the robot executive (mobility service) to move the robot to an unexplored area of the map.
 
 \subsubsection{Local Level}
+World represented as a lattice. World W = dense lattice with occupancy information, similar to occupancy grid maps.
 
-\gautam{PUT SOME DESCRIPTION IN TEXT ABOUT THE ALGORITHM/FRAMEWORK}
+Gl = hyperlocal coverage information in the lattice (within robot FOV). Here, Qg = robot node $v_q$  and unit velocity vector $\dot{v}_q$. 
 
+Generative model $\mathcal{G}$ is estimated from robot sensors. It assumes perfect motion model. It gives output $(s', o, r)$. Next state s' contains the new robot pose and velocity vector; . Observation o contains the occupancy information of lattice nodes within FOV of robot. r contains reward -- this includes fixed penalty for each step moved, distance penalty for moving along an edge, rotation penalty for change in robot velocity vector.
 
-\begin{algorithm}[t!]
-\caption{Hierarchical Planner}
-\label{alg:hierarchicalPlanner}
-\begin{algorithmic}
-\REQUIRE State $s^g=(G^g, Q^g)$
-\REQUIRE World configuration $W$
-\REPEAT
-    \STATE \textbf{Global level planner}
-    \item  GLP -- obtain world map
-    \item Estimate high-level generative model $\hat{\mathcal{G}}^g$ and create high-level POMDP
-    \item $\theta^l_t \gets \textsc{POMCP-GLP}(Q^g, G^g, \hat{\mathcal{G}^g})$
-    
-    \STATE \textbf{Low level planner}
-    \item LLP -- obtain local map
-    \item Estimate low-level generative model $\hat{\mathcal{G}}^l$ and create low-level POMDP
-    % \item $\hat{\pi}^{*l} \gets \textsc{POMCP-LLP}(Q^l,G^l,\hat{\mathcal{G}}^l ; \theta^l_t)$ \#learn value function at low level
-    \item $a_{t:T}^{*l} \gets \textsc{POMCP-LLP}(Q^l,G^l,\hat{\mathcal{G}}^l ; \theta^l_t)$ \#learn value function and get best actions
-    
-    \STATE \textbf{Executive}
-    \item Execute actions $a_{t:T}^{*l}$
-    \item Obtain observation $O$ from sensors
-    \item Update robot state $Q$, world configuration $W$
-\UNTIL timeout
-\end{algorithmic}
-\end{algorithm}
+Rollout policy $\pi_{rollout}$ is Dijkstra-based to reach next unexplored node
+
+Output of GLP is $a^{*l}_{t:T}$, which is a series of robot poses to reach, given to the robot executive.
+\sout{\gautam{PUT SOME DESCRIPTION IN TEXT ABOUT THE ALGORITHM/FRAMEWORK}}
+
+\subsubsection{Executive}
+Describe mobility services here. What info does it need to move to a new position?
+
+Goal position
+
+cost/risk maps
+
+other stuff?
 
 \input{IRM_Planning/algo_pomcp.tex}
 
@@ -2148,7 +2228,8 @@ Figure \ref{fig:beta_map} shows the map constructed during exploration of the Be
 In this work, we have developed a framework for exploring unknown environments in a POMDP framework in extremely large environments.  
 To obtain a tractable solution we discretize the belief space into a robot and task-relevant graph structure which reduces our search space for good policies.  We call this graph structure an Information Roadmap (IRM).  We demonstrate these capabilites in the DARPA Subterranean Challenge.  Future work includes learning based methods for graph expansion information gain estimation, multi-robot policy search, and a richer incorporation of risk and time into the graph planning framework.
 
-$Z(s, a, z) = P(z\,|\,s, a)$
+
+
 
 % \clearpage
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
