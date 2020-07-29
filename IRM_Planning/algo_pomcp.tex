@@ -9,17 +9,18 @@
 \caption{Hierarchical Coverage Planner}
 \label{alg:hierarchicalPlanner}
 \begin{multicols}{2}
+% \vspace{-10pt}
 \begin{algorithmic}
 \STATE \underbar{\textbf{Function HierarchicalPlan}}
 \item \textbf{input: }Beliefs $b^g$, $b^l$ of states $s=(G, Q)$
 \item \textbf{input: }World configuration $W$
 % \item \textbf{input: }Optional rollout policy $\pi_{rollout}$
 \REPEAT
-    \STATE \textbf{\# Global level planner}
+    \STATE \textbf{\# Global planner}
     \item  Obtain world information map
     \item Estimate $\hat{\mathcal{G}}^g$
     \item $\theta^l_{t:T} \gets \textsc{POMCP}(b^g, \hat{\mathcal{G}^g}, \pi_{rollout})$
-    \STATE \textbf{\# Low level planner}
+    \STATE \textbf{\# Local planner}
     \item Obtain local information map
     \item Estimate $\hat{\mathcal{G}}^l$
     \item $a_{t:T}^{*l} \gets \textsc{POMCP}(b^l;\hat{\mathcal{G}}^l, \theta^l_{t:T}, \pi_{rollout})$ 
@@ -51,177 +52,8 @@
 \STATE
 \STATE
 \STATE
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% Gautam's Version
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \begin{algorithm}[t!]
-% \caption{Hierarchical Coverage Planner}
-% \label{alg:hierarchicalPlanner}
-% \begin{multicols}{2}
-% \begin{algorithmic}
-% \STATE \underbar{\textbf{Function HierarchicalPlan}}
-% \item \textbf{input: }Beliefs $b^g$, $b^l$ of states $s=(G, Q)$
-% \item \textbf{input: }World configuration $W$
-% \item \textbf{input: }Optional rollout policy $\pi_{rollout}$
-% \REPEAT
-%     \STATE \textbf{\# Global level planner}
-%     \item  Obtain world information map
-%     \item Estimate $\hat{\mathcal{G}}^g$
-%     \item $\theta^l_{t:T} \gets \textsc{POMCP}(b^g, \hat{\mathcal{G}^g}, \pi_{rollout})$
-%     \STATE \textbf{\# Low level planner}
-%     \item Obtain local information map
-%     \item Estimate $\hat{\mathcal{G}}^l$
-%     \item $a_{t:T}^{*l} \gets \textsc{POMCP}(b^l;\hat{\mathcal{G}}^l, \theta^l_{t:T}, \pi_{rollout})$ 
-%     % \item \#learn value function and get best actions
-%     \STATE \textbf{\# Executive}
-%     \item Execute $a_{t:T}^{*l}$
-%     \item Obtain $z$ from sensors
-%     \item Update $Q$, $W$
-% \UNTIL timeout
-% \end{algorithmic}
-
-% \begin{algorithmic}
-% \STATE \underbar{\textbf{Function POMCP}}
-% \STATE \textbf{input: }Initial belief state $b_0$
-% \STATE \textbf{input: }Estimated generative model $\hat{\mathcal{G}}$
-% \STATE \textbf{input: }Optional rollout policy $\pi_{rollout}$
-% % \STATE
-% \STATE Initialize empty MCTS tree $T_r$
-% \REPEAT
-%     % \item Initial state $s_0 \sim b_0$
-%     \item \# Run SIMULATE with $\pi_{rollout}$ and $\hat{\mathcal{G}}$ to update $T_r$ with learned value function
-%     \item $T_r \gets \textsc{SIMULATE}(b_0; \hat{\mathcal{G}}, \pi_{rollout})$
-%     % \STATE Update the values and the number of visits by backpropagation from the leaf node to the root node
-% \UNTIL{timeout}
-% % \item 
-% \item Extract next N actions $a^*_{1:N}$ from $T_r$ \#N=1 for GLP. For LLP, keep going till leaf node
-% % \STATE
-% \RETURN $a*_{1:N}$
-% \STATE
-% \STATE
-% \STATE
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \\  
-% \STATE Function SIMULATE(s,h,depth)
-% \WHILE{depth < max depth}
-%     \IF{$h \in T$}
-%         \item add observation node h to $T_r$
-%         \item add action node $ha$ to $T_r \forall a$ actions from h
-%         \item return $ROLLOUT(s, h, depth)$
-%     \ENDIF
-%     \item choose action $a$ with maximum combined reward of exploration + UCT reward
-%     \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
-%     \item $R \gets r + \gamma\times SIMULATE(s', h', depth+1) $
-%     \item update visit counts to observation node $h$, action node $ha$, value function $V(ha)$
-%     \item return $R$
-% \ENDWHILE
-% \\
-% \STATE Function ROLLOUT(s, h, depth)
-% \WHILE{depth < max depth}
-%     \item $a \sim \pi_{rollout}(h)$ \# random action, or your customised domain-specific rollout
-%     \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
-%     \item return $r + \gamma \times ROLLOUT(s', h', depth+1)$
-% \\
-% \STATE Function $\hat{\mathcal{G}}$(s, a; $W_{occ}$)
-%     \item s' $\gets$ T(s, a, $W_{occ}$)
-%     \item o $\gets$ O(s.$W_{cov}$, s'.$W_{cov}$, s'.Q, $W_{occ}$)
-%     \item r $\gets$ R(...)
-%     \RETURN (s', o, r)
-% \ENDWHILE
 \STATE
 \end{algorithmic}
 
 \end{multicols}
-
-% \begin{algorithmic}[1]
-
-% \Procedure{Roy}{$a,b$}       \Comment{This is a test}
-%     \State System Initialization
-%     \State Read the value 
-%     \If{$condition = True$}
-%         \State Do this
-%         \If{$Condition \geq 1$}
-%         \State Do that
-%         \ElsIf{$Condition \neq 5$}
-%         \State Do another
-%         \State Do that as well
-%         \Else
-%         \State Do otherwise
-%         \EndIf
-%     \EndIf
-
-%     \While{$something \not= 0$}  \Comment{put some comments here}
-%         \State $var1 \leftarrow var2$  \Comment{another comment}
-%         \State $var3 \leftarrow var4$
-%     \EndWhile  \label{roy's loop}
-% \EndProcedure
-
-% \end{algorithmic}
 \end{algorithm}
-
-
-% \begin{algorithm}[t!]
-% \caption{Online Planning using POMCPs}
-% \label{alg:pomcp}
-% \begin{multicols}{2}
-% \begin{algorithmic}
-% \REQUIRE initial belief state $b_0$
-% \REQUIRE estimated generative model $\mathcal{G}$
-% \REQUIRE rollout policy $\pi_{rollout}$ (random or domain-specific)
-% \STATE Initialize empty MCTS tree $T_r$, globally accessible
-% % \STATE Function POMCP($b_0$)
-% \REPEAT
-%     % \item Initial state $s_0 \sim b_0$
-%     \item \# Run SIMULATE with $\pi_{rollout}$ and $\mathcal{G}$ to update $T_r$ with learned value function
-%     \item $T_r \gets \textsc{SIMULATE}(b_0; \mathcal{G}, \pi_{rollout})$
-%     % \STATE Update the values and the number of visits by backpropagation from the leaf node to the root node
-% \UNTIL{timeout}
-% \item Extract next N actions $a^*_{1:N}$ from $T_r$ \#N=1 for GLP. For LLP, keep going till leaf node
-% \RETURN $a*_{1:N}$
-% % \\  
-% % \STATE Function SIMULATE(s,h,depth)
-% % \WHILE{depth < max depth}
-% %     \IF{$h \in T$}
-% %         \item add observation node h to $T_r$
-% %         \item add action node $ha$ to $T_r \forall a$ actions from h
-% %         \item return $ROLLOUT(s, h, depth)$
-% %     \ENDIF
-% %     \item choose action $a$ with maximum combined reward of exploration + UCT reward
-% %     \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
-% %     \item $R \gets r + \gamma\times SIMULATE(s', h', depth+1) $
-% %     \item update visit counts to observation node $h$, action node $ha$, value function $V(ha)$
-% %     \item return $R$
-% % \ENDWHILE
-% % \\
-% % \STATE Function ROLLOUT(s, h, depth)
-% % \WHILE{depth < max depth}
-% %     \item $a \sim \pi_{rollout}(h)$ \# random action, or your customised domain-specific rollout
-% %     \item $(s', o, r) \gets \hat{\mathcal{G}}(s,a)$, $h' = hao$ \# new observation node after taking action a and observing o
-% %     \item return $r + \gamma \times ROLLOUT(s', h', depth+1)$
-% % \\
-% % \STATE Function $\hat{\mathcal{G}}$(s, a; $W_{occ}$)
-% %     \item s' $\gets$ T(s, a, $W_{occ}$)
-% %     \item o $\gets$ O(s.$W_{cov}$, s'.$W_{cov}$, s'.Q, $W_{occ}$)
-% %     \item r $\gets$ R(...)
-% %     \RETURN (s', o, r)
-% % \ENDWHILE
-
-% \end{algorithmic}
-% \end{multicols}
-% \end{algorithm}
