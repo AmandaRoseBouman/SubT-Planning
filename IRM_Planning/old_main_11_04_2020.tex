@@ -1,0 +1,874 @@
+\def\year{2021}\relax
+%File: formatting-instructions-latex-2021.tex
+%release 2021.2
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+
+% \usepackage{aaai21}  % DO NOT CHANGE THIS             % TODO THIS PACKAGE SHOULD BE USED FOR ACTUAL CONFERENCE SUBMISSION!
+\usepackage{aaai21_no_copyright}  % DO NOT CHANGE THIS  % XXX TEMPORARILY DISABLED COPYRIGHT NOTICE FOR arXiv SUBMISSION!
+
+\usepackage{times}  % DO NOT CHANGE THIS
+\usepackage{helvet} % DO NOT CHANGE THIS
+\usepackage{courier}  % DO NOT CHANGE THIS
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\urlstyle{rm} % DO NOT CHANGE THIS
+\def\UrlFont{\rm}  % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\usepackage{caption} % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\frenchspacing  % DO NOT CHANGE THIS
+\setlength{\pdfpagewidth}{8.5in}  % DO NOT CHANGE THIS
+\setlength{\pdfpageheight}{11in}  % DO NOT CHANGE THIS
+%\nocopyright
+%PDF Info Is REQUIRED.
+% For /Author, add all authors within the parentheses, separated by commas. No accents or commands.
+% For /Title, add Title in Mixed Case. No accents or commands. Retain the parentheses.
+\pdfinfo{
+/Title (PLGRIM: Hierarchical Value Learning for Large-scale Coverage in Unknown Environments)
+/Author (Sung-Kyun Kim*, Amanda Bouman*, Gautam Salhotra, David D. Fan, Kyohei Otsu, Joel Burdick, Ali-akbar Agha-mohammadi)
+/TemplateVersion (2021.2)
+} %Leave this
+% /Title ()
+% Put your actual complete title (no codes, scripts, shortcuts, or LaTeX commands) within the parentheses in mixed case
+% Leave the space between \Title and the beginning parenthesis alone
+% /Author ()
+% Put your actual complete list of authors (no codes, scripts, shortcuts, or LaTeX commands) within the parentheses in mixed case.
+% Each author should be only by a comma. If the name contains accents, remove them. If there are any LaTeX commands,
+% remove them.
+
+% DISALLOWED PACKAGES
+% \usepackage{authblk} -- This package is specifically forbidden
+% \usepackage{balance} -- This package is specifically forbidden
+% \usepackage{color (if used in text)
+% \usepackage{CJK} -- This package is specifically forbidden
+% \usepackage{float} -- This package is specifically forbidden
+% \usepackage{flushend} -- This package is specifically forbidden
+% \usepackage{fontenc} -- This package is specifically forbidden
+% \usepackage{fullpage} -- This package is specifically forbidden
+% \usepackage{geometry} -- This package is specifically forbidden
+% \usepackage{grffile} -- This package is specifically forbidden
+% \usepackage{hyperref} -- This package is specifically forbidden
+% \usepackage{navigator} -- This package is specifically forbidden
+% (or any other package that embeds links such as navigator or hyperref)
+% \indentfirst} -- This package is specifically forbidden
+% \layout} -- This package is specifically forbidden
+% \multicol} -- This package is specifically forbidden
+% \nameref} -- This package is specifically forbidden
+% \usepackage{savetrees} -- This package is specifically forbidden
+% \usepackage{setspace} -- This package is specifically forbidden
+% \usepackage{stfloats} -- This package is specifically forbidden
+% \usepackage{tabu} -- This package is specifically forbidden
+% \usepackage{titlesec} -- This package is specifically forbidden
+% \usepackage{tocbibind} -- This package is specifically forbidden
+% \usepackage{ulem} -- This package is specifically forbidden
+% \usepackage{wrapfig} -- This package is specifically forbidden
+% DISALLOWED COMMANDS
+% \nocopyright -- Your paper will not be published if you use this command
+% \addtolength -- This command may not be used
+% \balance -- This command may not be used
+% \baselinestretch -- Your paper will not be published if you use this command
+% \clearpage -- No page breaks of any kind may be used for the final version of your paper
+% \columnsep -- This command may not be used
+% \newpage -- No page breaks of any kind may be used for the final version of your paper
+% \pagebreak -- No page breaks of any kind may be used for the final version of your paperr
+% \pagestyle -- This command may not be used
+% \tiny -- This is not an acceptable font size.
+% \vspace{- -- No negative value may be used in proximity of a caption, figure, table, section, subsection, subsubsection, or reference
+% \vskip{- -- No negative value may be used to alter spacing above or below a caption, figure, table, section, subsection, subsubsection, or reference
+
+% \setcounter{secnumdepth}{0} %May be changed to 1 or 2 if section numbers are desired.
+\setcounter{secnumdepth}{2} %May be changed to 1 or 2 if section numbers are desired.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[normalem]{ulem}
+\usepackage{subfig}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{todonotes}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{comment}
+% \usepackage[noend]{algpseudocode} % this breaks my algorithm box
+
+\usepackage{tikzpagenodes}
+
+% \usepackage[
+%   subtle
+%   %moderate
+% ]{savetrees}
+
+\usepackage{algorithm,algorithmic}
+
+\newcommand{\ph}[1]{{\textbf{#1}:}} % paragraph header
+% \newcommand{\todo}[1]{{\color{red} #1 }} % Tasks to do
+\newcommand{\note}[1]{{\color{cyan} NOTE: #1 }}
+\newcommand{\hn}[1]{{\color{orange} NOTE: (Henry) #1 }}
+\newcommand{\gautam}[1]{{\color{cyan}Gautam: #1 }}
+% \newcommand{\gautam}[1]{{\color{cyan}}}
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}}
+\newcommand{\argmin}{\mathop{\mathrm{argmin}}}
+
+\newcommand{\ali}[1]{{\color{blue} #1 }}
+%\newcommand{\ali}[1]{} % to remove Ali's comments
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+% The file aaai21.sty is the style file for AAAI Press
+% proceedings, working notes, and technical reports.
+%
+
+% Title
+
+% Your title must be in mixed case, not sentence case.
+% That means all verbs (including short verbs like be, is, using,and go),
+% nouns, adverbs, adjectives should be capitalized, including both words in hyphenated terms, while
+% articles, conjunctions, and prepositions are lower case unless they
+% directly follow a colon or long dash
+
+\title{
+    % PLGRIM: Hierarchical Value Learning for Large-scale Coverage \\in Unknown Environments
+    PLGRIM: Hierarchical Value Learning for Large-scale \\Coverage in Unknown Environments
+    % PLGRIM: Hierarchical Value Learning for \\Large-scale Coverage in Unknown Environments
+}
+\author{
+    Sung-Kyun Kim,\thanks{These authors contributed equally to this work.}\textsuperscript{\rm 1}
+    Amanda Bouman,$^{*}$\textsuperscript{\rm 2}
+    Gautam Salhotra,\textsuperscript{\rm 3}
+    David D. Fan,\textsuperscript{\rm 1} \\
+    Kyohei Otsu,\textsuperscript{\rm 1}
+    Joel Burdick,\textsuperscript{\rm 2}
+    Ali-akbar Agha-mohammadi\textsuperscript{\rm 1} \\
+}
+\affiliations{
+    \textsuperscript{\rm 1}
+    NASA Jet Propulsion Laboratory,
+    California Institute of Technology
+    \\ \{sung.kim,
+    david.d.fan,
+    kyohei.otsu,
+    aliagha\}@jpl.nasa.gov
+    % \\ aliakbar.aghamohammadi@jpl.nasa.gov
+    \\
+    \textsuperscript{\rm 2}
+    Department of Mechanical and Civil Engineering,
+    California Institute of Technology
+    \\ abouman@caltech.edu,
+    jwb@robotics.caltech.edu
+    \\
+    \textsuperscript{\rm 3}
+    Department of Computer Science,
+    University of Southern California
+    \\ salhotra@usc.edu
+}
+% \author{
+%     %Authors
+%     % All authors must be in the same font size and format.
+%     Written by AAAI Press Staff\textsuperscript{\rm 1}\thanks{With help from the AAAI Publications Committee.}\\
+%     AAAI Style Contributions by Pater Patel Schneider,
+%     Sunil Issar,  \\
+%     J. Scott Penberthy,
+%     George Ferguson,
+%     Hans Guesgen,
+%     Francisco Cruz,
+%     Marc Pujol-Gonzalez
+%     \\
+% }
+% \affiliations{
+%     %Afiliations
+%     \textsuperscript{\rm 1}Association for the Advancement of Artificial Intelligence\\
+%     %If you have multiple authors and multiple affiliations
+%     % use superscripts in text and roman font to identify them.
+%     %For example,
+%
+%     % Sunil Issar, \textsuperscript{\rm 2}
+%     % J. Scott Penberthy, \textsuperscript{\rm 3}
+%     % George Ferguson,\textsuperscript{\rm 4}
+%     % Hans Guesgen, \textsuperscript{\rm 5}.
+%     % Note that the comma should be placed BEFORE the superscript for optimum readability
+%
+%     2275 East Bayshore Road, Suite 160\\
+%     Palo Alto, California 94303\\
+%     % email address must be in roman text type, not monospace or sans serif
+%     publications21@aaai.org
+%
+%     % See more examples next
+% }
+\iffalse
+%Example, Single Author, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
+\title{My Publication Title --- Single Author}
+\author {
+    % Author
+    Author Name \\
+}
+
+\affiliations{
+    Affiliation \\
+    Affiliation Line 2 \\
+    name@example.com
+}
+\fi
+
+\iffalse
+%Example, Multiple Authors, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
+\title{My Publication Title --- Multiple Authors}
+\author {
+    % Authors
+    First Author Name,\textsuperscript{\rm 1}
+    Second Author Name, \textsuperscript{\rm 2}
+    Third Author Name \textsuperscript{\rm 1} \\
+}
+\affiliations {
+    % Affiliations
+    \textsuperscript{\rm 1} Affiliation 1 \\
+    \textsuperscript{\rm 2} Affiliation 2 \\
+    firstAuthor@affiliation1.com, secondAuthor@affilation2.com, thirdAuthor@affiliation1.com
+}
+\fi
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In order for a mobile robot to achieve higher levels of autonomy in previously unexplored environments, it must account for uncertainties in localization, sensor measurements, and unknown hazards, as well as the effect of robot's own actions on these uncertainties. 
+%
+Making decision in such stochastic setting requires learning value and constructing policies over belief space (space of probability distribution over robot-world state). 
+%
+Learning value over belief space suffers from computational challenges in large spatial environments (curse of dimensionality) and at long temporal horizons (curse of history) required in many real-world missions. %An effective planner must be computationally efficient and handle time constraints without severely impacting the optimality of the solution.
+This work proposes a scalable value learning method over belief space: PLGRIM (Planning at Local-Global levels with Robust Information roadMaps), that bridges the gap between \textit{(i)} local, high-fidelity information such as traversability, and \textit{(ii)} global, macro-level reward seeking behaviors.
+%
+By leveraging hierarchical belief space planners with information-rich graph structures PLGRIM can address large-scale coverage problems while providing locally near-optimal plans within a receding horizon.
+% We take samples of the belief space in order to construct a graph structure that encodes mission and environment-related information, which we call an Information Roadmap (IRM).  
+PLGRIM is a step toward enabling belief space planners %aims at bridging the gap between %pushes the boundaries of the state-of-art in 
+on physical robots operating in unknown and complex environments. 
+%
+As a concrete example, we demonstrate the performance of PLGRIM on Boston Dynamics' quadruped SPOT robot operating in unstructured environments.
+%and demonstrate its performance as the planning core of the NeBula 2.0 autonomy framework. NeBula 1.0 (prior to PLGRIM integration) framework and the adopted hardware in this demonstration have contributed to winning first place in the 2020 DARPA Subterranean Challenge, Urban Circuit.
+
+%In  particular,  we  will  discuss  the  behaviors  andcapabilities  which  emerge  from  the  integration  of  the  auton-omy  architecture  NeBula  (Networked  Belief-aware  PerceptualAutonomy)   with   next-generation   mobility   systems.   We   willdiscuss  the  hardware  and  software  challenges,  and  solutionsin mobility, perception, autonomy, and wireless networking, aswell  as  lessons  learned  and  future  directions.  
+
+%our framework for autonomous exploration in simulation with large environments with rough terrains and complex topology.
+% We demonstrate our framework in team CoSTAR's participation in the DARPA Subterranean Challenge, in which teams compete to autonomously search for artifacts in large, unknown, GPS-denied environments.
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+%\ph{High-level mission}
+Consider a large-scale coverage mission in an unknown environment, in which a robot is tasked with exploring and searching a GPS-denied unknown area, under given time constraints. Essential elements of an autonomy architecture needed to realize such a mission include creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements while minimizing risks.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
+
+
+% \begin{figure}[t]
+%   \centering
+% %   \includegraphics[width=.48\columnwidth]{figures/firstpage_v2.png}
+%   \includegraphics[width=.7\columnwidth,trim={0 0 0 11.0cm},clip]{figures/firstpage_v2.png}
+%   \caption{ %The top figure shows a portion of the course in the Urban Circuit of the DARPA Subterranean Challenge. The blue line highlights two neighboring rooms joined by a narrow passage. CoSTAR efficiently explored both rooms by planning on the IRM. 
+%   IRM and lattice visualization during an autonomous exploration mission.}
+%   \label{fig:firstPage}
+% \end{figure}
+
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[width=.4\columnwidth]{figures/graph-lattice-map.pdf}
+%   \caption{Visualization of hierarchical Information RoadMaps (IRMs).}
+%   \label{fig:firstPage}
+% \end{figure}
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[width=.6\columnwidth]{figures/SystemOverview.png}
+%   \caption{[WIP] System overview}
+%   \label{fig:system_overview}
+% \end{figure}
+\begin{figure}[t!]
+  \centering
+  \subfloat[System diagram\label{fig:system_overview}]{
+    \includegraphics[width=.85\columnwidth,trim={0 5.5cm 9.0cm 0},clip]{figures/SystemOverview.pdf}
+  }
+  % \quad
+  \\
+%   \subfloat[Visualization of hierarchical IRMs]{%
+%   \subfloat[Hierarchical IRMs]{%
+  \subfloat[Graph/Lattice IRMs\label{fig:irms}]{%
+    \includegraphics[width=.40\columnwidth,trim={0 7cm 16cm 0},clip]{figures/graph-lattice-map.pdf}
+  }
+  \caption{Overall framework of hierarchical Information RoadMaps (IRMs) and POMDP planners.}
+  \label{fig:firstPage}
+\end{figure}
+
+
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[width=.6\columnwidth,trim={0 0 0 1.0cm},clip]{figures/SystemOverview.png}
+%   \caption{System diagram of the overall PLGRIM framework.}
+%   \label{fig:system_overview}
+% \end{figure}
+
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[width=.6\columnwidth]{figures/sketch_hierarchical_belief_space.png}
+%   \caption{Illustration. [TODO] Visualize the planned path in each level.}
+%   \label{fig:illustration}
+% \end{figure}
+
+
+From value learning perspective, a coverage planning problem in an unknown space can be considered an active learning problem over the robot's belief, where belief is defined as the probability distributions over all possible joint robot-world states.
+%
+The objective is to find the best action sequence that maximizes the accumulated reward over time.  The agent must accumulate data to incrementally build a model of its environment, and must understand the effects of its actions on the quality and quantity of data it collects.
+
+%\ph{Problem description--POMDP perspective}
+Since the agent's future actions affect its belief of the world and robot state, this coverage problem is fundamentally a Partially Observable Markov Decision Process (POMDP) problem.
+%A POMDP is a principled formalization of 
+%a sequential decision making process under motion and sensing uncertainty.
+The agent employs the underlying intrinsic model of the sequential action-observation process under uncertainty, so that it can %(asymptotically) converge to the optimal solution in a more 
+expand its search structure over the space and learn the value in a more sample-efficient manner than model-free learning approaches.
+
+
+%\ph{Gap in the state-of-the-art}
+Belief value learning in POMDP setting suffers from the curse of dimensionality \cite{KLC98} and curse of history \cite{Pineau03}. Many powerful methods are extending the spatial and temporal horizons of POMDPs with varying degrees of efficiency and accuracy (e.g., \cite{silver2010monte,somani2013despot,bonet1998learning,kim2019pomhdp}). In this paper, we deal with exploration problems with very long time horizons (> 1 hour), large spatial extents (> 10 km$^2$), and high dimensional belief states (including beliefs on the state of the environment), that exacerbates the curses of history and dimensionality when planning robot behaviors over the belief space.
+%
+
+%\ph{Contributions}
+To address this problem, we introduce several key spatial and temporal approximations of the robot policy space to enable computational tractability while constructing an online and real-time solver.
+%search space.  This decomposition allows us to approximately solve the optimization problem in a computationally tractable manner.  
+Spatially, we decompose the belief space into task-relevant partitions of the space,
+%into a robot and task-relevant graph structure 
+enriched with environment map estimates. %, which reduces our search space for good policies, 
+The partitioning structure is called an Information Roadmap (IRM) (Fig.~\ref{fig:irms}). Temporally, we decompose the problem into a long-range (global) IRM which spans the entirety of the known environment, and a robot-centered short-range (local) IRM. % with fixed size. 
+We then propose a receding-horizon-control (RHC)-based solver to address the planning over this hierarchical POMDP structure % problem in a receding horizon fashion, 
+in real time.
+
+%\ph{Outline}
+Section~\ref{sec:related_work} presents the related work and Section~\ref{sec:ECSPasPOMDP} formalizes the problem.
+We propose the hierarchical belief learning and coverage planning framework in Section~\ref{sec:plgrim}. Experimental results in simulation and on physical robots are presented in Section~\ref{sec:exp_results}.% validating our method, and Section~\ref{sec:conclusion} concludes this paper.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Related Work}\label{sec:related_work}
+%\ph{Coverage--Frontier-based exploration}
+Frontier-based exploration is a widely used approach for autonomous exploration (e.g., \cite{yamauchi1997frontier,tao2007motion,keidar2012robot,heng2015efficient,gonzalez2002navigation,grabowski2003autonomous}). By continuing exploration until exhausting all remaining frontiers, frontier-based approaches can guarantee \textit{completeness} of the coverage of reachable spaces.  These methods typically rely on myopic (e.g., one-step) look-ahead greedy policies, selecting the best frontier upfront. Hence they can be subject to local minima and provide suboptimal solutions in time.
+
+%\ph{Coverage--(Model-free) RL-based approaches}
+Model-free reinforcement learning (RL) has been applied to coverage and exploration problems (e.g., \cite{pathak_icm, rnd,burda2018study,ECR2018}). In this setting, the typical approach is to find a policy which maps sensor data to actions, to maximize the reward. When it comes to long-range and large-scale, and (possibly safety-critical) missions on physical robots, collecting necessary data for this class of methods can be a significant challenge.
+
+%\ph{Coverage--(Model-based RL) POMDP approaches}
+POMDP-based approaches generate a non-myopic policy by considering long-horizon action sequences (e.g., \cite{kurniawati2011motion}, \cite{bai2015intention}), interactively learning the value function, and returning the best action sequence that maximizes the accumulated rewards. Different methods have reduced the complexity of the POMDP problem in coverage and exploration problems. \citet{indelman2015planning} and \citet{martinez2009bayesian} employed a direct policy search scheme with a Gaussian belief assumption. \citet{Lauri2016planning} extended this to non-Gaussian beliefs using the POMCP (Partially Observable Monte-Carlo Planning) solver. % algorithm that uses a Monte-Carlo Tree Search \cite{silver2010monte}.
+%In this work, we aim at scaling the solution even further to enable solutions for hte missions fo interste that are longer and larger than mission 
+However, when it comes to aforementioned missions of interest, the current approaches do not scale well due to the curse of history and dimensionality \cite{Pineau03}.
+
+%\ph{Large scale--Hierarchical approaches}
+Hierarchical planning structures \cite{kaelbling2011planning} aim to tackle larger problems by employing multiple solvers running at different resolutions.  
+%
+In the coverage and exploration context, \citet{umari2017autonomous} applies hierarchical planning to frontier-based exploration, while  \cite{dang2019explore} extends the lower level module to a more sophisticated frontier selection algorithm considering the information gain along each path. \citet{Lauri2016planning} replace the lower level module with a POMDP-based planner, to improve local coverage performance with non-myopic planning. \citet{kim2019bi} propose a hierarchical online-offline solver for risk-aware navigation. \citet{vien2015hierarchical} propose a hierarchical POMCP framework which outperformed Bayesian model-based hierarchical RL approaches in some benchmarks.
+
+\section{Exploratory Covering Salesman Problem}
+\label{sec:ECSPasPOMDP}
+In this section, we introduce the coverage problem as a variant of the traveling salesman problem, and show how we formalize it as a POMDP. We then discuss the challenges and our approach. %how the exact solution to this problem can easily become intractable.  
+
+\ph{Covering Salesman Problem (CSP)} Given a known environment represented by an abstract graph structure $W = (V, E)$, with free and occupied nodes $V_{free}\cup V_{occ} = V$, the traditional coverage problem aims to find a sequence of nodes and edge traversals that pass through all free nodes $V_{free} \subseteq V$.  By incorporating a sensor field-of-view $F:V\rightarrow \mathcal{P}(V)$, which maps each node to a subset of "visible" nodes, and adding the objective of minimizing travel distance, the coverage problem can be seen as a generalization of the traveling salesman problem -- the \emph{covering salesman problem} (CSP).  In the CSP, the objective is to determine the minimum length path through a subset of nodes $\{v_i\}_i \subseteq V_{free}$ such that every free node is within the accumulated sensor field-of-view: $V_{free} \subseteq \cup_i F(v_i)$.
+In this paper, we further modify the CSP by assuming that the environment $W$ is not known a priori, which we call an \emph{exploratory covering salesman problem} (ECSP).  After incorporating a consideration of motion and sensing uncertainty of the agent, we can cast the ECSP as a POMDP problem with a reward function designed for coverage, which we will refer to as \emph{ECSP-POMDP} hereafter.
+
+\ph{ECSP-POMDP Elements} A POMDP is described as a tuple $\langle \mathbb{S}, \mathbb{A}, \mathbb{Z}, T, O, R \rangle$, where $\mathbb{S}$ is the set of states of the agent and world, $\mathbb{A}$ and $\mathbb{Z}$ are the set of robot actions and observations. At every time step, the agent performs an action $a \in \mathbb{A}$ in state $s$ and receives an observation $z \in \mathbb{Z}$ resulting from the agent's perceptual interaction with the environment. The motion model $T(s, a, s') = P(s'\,|\,s, a)$ defines the probability of being at state $s'$ after taking an action $a$ in state $s$. The observation model $O(s, a, z) = P(z\,|\,s, a)$ is the probability of receiving observation $z$ after taking action $a$ in state $s$. The reward function $R(s,a)$ returns the expected utility for executing action $a$ in state $s$.
+
+\ph{State} We define the system (robot-world) state as a 2-tuple $s = (W, Q) \in \mathbb{W}\times\mathbb{Q} =  \mathbb{S}$ consisting of the robot state $Q$ and the regions of the world have been observed (covered) by the robot $W$. The world representation can be further decomposed as $W = (W_{occ}, W_{cov})$ where $W_{occ}$ describes a representation of the geometry of the world, and $W_{cov}$ encodes which regions of the world have been observed by the robot.  For example, $W_{occ}:\mathbb{Q}\rightarrow\{0,1\}$ can be a mapping from pose to the set $\{0,1\}$, where $W_{occ}(Q) = 0$ if the location is free and $W_{occ}(Q) = 1$ if the location is occupied (and similarly for $W_{cov}$).  We also denote the ground truth occupancy of the world as $W_{occ}^{GT}$.
+% The underlying ground truth (complete) world is denoted by $W_{occ}$. For example, $W_{occ}:\mathbb{Q}\rightarrow\{0,1\}$ can be a binary mapping, where $W_{occ}(Q) = 0$ if the location is free and $W_{occ}(Q) = 1$ if the location is occupied (and similarly for $W_{cov}$).  %We also denote the ground truth occupancy of the world as $W_{occ}^{GT}$.
+
+\ph{Belief State} Since the state of the world is not fully observable, the agent maintains a belief state $b_t\in \mathbb{B}$ defined as the posterior distribution over all possible states conditioned on past actions and observations at time $t$. The belief over state $s$ is $b_{t} = P(s \,|\, a_{0:t-1}, z_{1:t})$. The ESCP belief state is a 2-tuple $b_t = p(s_t) = p(W,Q)$.
+
+\ph{Transition Model} Given an action $a$, the estimated transition model $T$ maps the robot and world state $s = (W, Q)$ to the subsequent state $s' = (W', Q')$, i.e., $T(s, a, s'; \, W_{occ}^{GT})$. 
+The transition model is parametrized by ground truth world map $W_{occ}^{GT}$, which represents the generative model (in simulation or physical robot motion). %It encodes the traversability risk of an action $a \in \mathbb{A}$. 
+The model $W_{occ}^{GT}$ encodes the true traversability information and determines if the robot can or cannot transition along the edge $e$ induced by action $a$.% and, consequently, the state does not change: $s = s'$.
+
+\ph{Observation} Upon taking an action $a$ in state $s$, the robot receives an observation of the robot state $Q$ and a partial observation of the world state $W$. Given a robot state $Q$, the robot observes areas of the world within the field-of-view of its sensors.  The observation model is denoted by $  O(z | s, a; \, W_{occ}^{GT})$
+where $O$ provides information about $W_{cov}$.% within the field-of view, which depends on a ray-casting model.
+
+\ph{Traditional Map Representation} Grid maps are a common representation of the world state $W$ in robotics. %(which we introduced as having a continuous domain, i.e. $W:\mathbb{Q}\rightarrow \{0,1\}$)
+By using grid cells $\bar{W}=\{m_i\}_i$ where $m_i$ represents the world state (occupancy, coverage, etc.) at the $i$-th cell, the world state is reduced to a discrete domain.  In this work, we lightly assume the presence of a mapping and costmap-generating module which creates a local map $\bar{W}$.  
+In order to compute the posterior probability $p(\bar{W} | z_{1:t}, Q_{1:t})$ of the whole map $\bar{W}$, given the robot's measurements $z_{1:t}$ and trajectory $Q_{1:t}$, the binary cell states are traditionally approximated by assuming full independence between them \cite{TBF05,elfes1990stochastic}. Note that in this work, the resolution of $\bar{W}$ is about of 10cm for a 1m-sized robot.
+
+\ph{Pose Graph} In addition to the grid map representation of the environment, we employ a \textit{pose graph} \cite{thrun2002probabilistic}, where $\mathcal{PG} = p(Q_{0:t})$ is the belief over the path history taken so far.  This pose graph is generated by a SLAM algorithm and should run in realtime to support our planning architecture.  %In practice we may simplify our representation of $\mathcal{PG}$ by approximating it with the maximum likelihood estimate.
+
+\ph{Reward} The one-step reward is computed as a function of the information gain and cost associated with an action:
+\begin{align}
+    {R}(s, a) = \mathcal{F}\Big[\, \textit{InfoGain}(W_{cov}, z), \; \textit{Cost}(W_{occ}, a) \, \Big]%: \, \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{R} 
+\end{align}
+Information gain is defined as the marginal gain of information: $\textit{InfoGain}(W_{cov}, z) = I(W_{cov} \cup z) - I(W_{cov})$, since the benefit of being in a state $s$ is dependent on whether the robot has already observed neighboring areas in the world. The cost of an action $Cost(W_{occ}, a)$ is a function of the world geometry $W_{occ}$ since this sub-state informs both the required actuator output (path length and velocity) and the proximity to the actuator's limitations (traversability risk) required to execute an action.
+
+\ph{ESCP-POMDP} We define a belief policy as a function $\pi : \mathbb{B} \rightarrow \mathbb{A}$ which maps each belief state $b$ to an action $a$.  Let the belief reward $r(b,a)=\int_s R(s,a)b(s)ds$ be the expected reward of taking action $a$ at belief $b$.  The optimal policy maximizes the expected discounted sum of future rewards.
+\begin{align}
+  \pi^*(b) &= \arg\max_\pi \, \mathbb{E} \sum_{t=0}^{L} \gamma^t r(b_t, \pi(b_t)) 
+  \label{eq:optimal_policy}
+\end{align}
+where $\gamma \in (0,1)$ is a discount factor which ensures that immediate rewards have a greater effect on decisions than future rewards. The overall objective is to solve this optimization problem in a computationally tractable way.
+
+\ph{Intractability} 
+%Given the high-dimensional grid representation of the world state, 
+Eq. (\ref{eq:optimal_policy}) is a highly intractable optimization for large environments. This is because of 1) the high dimension of the belief state $b$, particularly with respect to the belief over the high-dimensional grid representation of the world state $\bar{W}$, and 2) the large timescale $L$ as the complexity of the search space grows exponentially with time. In the next section, we discuss our approach to further decompose and address this problem.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{PLGRIM: Hierarchical Coverage Planning on Information Roadmaps}
+\label{sec:plgrim}
+
+%\ph{Our Contributions} 
+To obtain a tractable solution to the ESCP problem in Eq. (\ref{eq:optimal_policy}), we propose a novel approach in which we 1) introduce a hierarchical approximation of the belief space $b=p(W,Q)$ to reduce the policy search space, and 2) introduce a hierarchical POMCP solver to quickly find non-myopic solutions on local to global scales in real-time.
+
+\ph{Architecture}  We decompose the problem into tractable subproblems by introducing spatial and temporal abstraction which enable efficient and reactive robot behaviors on very large scales (kms).  The hierarchical planner has two cascaded layers with different environment representation scales. The higher layer, which we call a \emph{graph-level planner}, employs a sparse graph structure of dynamic size which captures the connectivity of the free space in the known part of the environment. The lower layer, which we call a \emph{lattice-level planner}, employs an agent-centered dense grid structure of fixed dimensions that moves with the robot (see Fig.~\ref{fig:system_overview}). %6
+
+\subsection{Hierarchical Belief Space Representation} 
+
+\ph{Belief Encoding} Both the graph-level planner and lattice-level planner use a graph-based abstraction of the world state $W$.  We call these graph-based approximations an \textit{Information Roadmap (IRM)}. %\cite{agha2014firm}.
+We use super-scripts $(\cdot)^g$ or $(\cdot)^l$ as needed to describe objects specific to the graph-level or lattice-level respectively. We describe the graph-level IRM first, but most discussions apply to the lattice-level IRM too. Let $V^g=\{v_i\}_i$ denote a set of robot poses $v_i\in \mathbb{Q}$.  Then for each pose $v_i\in V^g$ we construct an approximation of $W(v_i) \approx W^g(v_i)$, with $W_{occ}^g(v_i) = \{0,1\}$ and $W_{cov}^g(v_i) = \{0,1\}$.  %This approximation can be constructed by finding the maximum value $W_{occ}(v_j)$ for all $v_j$ in a neighborhood of $v_i$, or some other approximate method.  We also can approximate $W_{cov}^g$ as a function of the poses $V^g$ and the pose graph $\mathcal{PG}$. 
+For details on computing these approximations for both graph-level and lattice-level, see the supplemental material.  We then construct an approximate graph-level belief $b^g=p(W^g, Q)$.  By assuming independence between variables, this belief can be decomposed as $b^g=p(Q)\prod_i p(W_{occ}^g(v_i))$.  Additionally, to create a meaningful decomposition of the action space, we construct edges $E^g=\{e_{ij}\}_{i,j}$ which connect the nodes $v_i, v_j$.  In doing so, we create a graph structure $G^g=(V^g, E^g)$ representation of the world.  We associate to the edges transition probabilities as well as other quantities of interest (e.g. risk, cost of traverse, etc).
+
+Fig. \ref{fig:system_overview} illustrates the process by which the 3D volumetric information $W$, acquired from raw sensor data, is approximated into discrete probability distributions over occupancy and coverage. 
+Therefore, we have approximated and discretized the belief space $b^g\in\mathbb{B}^g\subset\mathbb{B}$ and $b^l\in\mathbb{B}^l\subset\mathbb{B}$ for the graph and lattice-level planners to act on.
+
+%\ph{POMDP Specifics}
+For each planning problem in the hierarchy we define a sub-POMDP problem over the graph representation.  The details of these problems differ in terms of the definitions for transition models $T^g(\cdot),T^l(\cdot)$, observations $O^g(\cdot),O^l(\cdot)$, and rewards $R^g(\cdot),R^l(\cdot)$.  We detail the particular design choices used in this work in the supplementary material, and give the general framework here.
+
+\subsection{Hierarchical Policy Formulation}
+\label{sec:hierarchical_policy}
+\ph{Policy} We define a graph-level policy as a mapping from the graph-level belief state $b^g$ to a goal-related parameter $\theta^g \in \Theta^g$ 
+\begin{align}
+    \pi^g : \mathbb{B}^g \to \mathbb{A}^g, \; \mathbb{A}^g = \Theta^g\ .
+\end{align}
+The action space $\Theta^g$ encodes a global, non-myopic task, and serves as an input to the lattice-level policy: 
+\begin{align}
+    \pi^l: \mathbb{B}^l \times \Theta^g \to \mathbb{A}^l\ .
+\end{align}
+The output of the lattice-level policy is a controller to move the robot (e.g. a waypoint or path for a controller to track, or parameters for a feedback policy that generates control commands).
+
+We define an overall policy $\pi \in \Pi$ generated by combining the graph-level policy $\pi^g$ and the lattice-level policy $\pi^l$:
+\begin{align}
+    \pi(b) = \pi^l(b^l; \, \pi^g(b^g)) = \pi^l(b^l; \, \theta^g) : \, \mathbb{B}\rightarrow \mathbb{A} 
+\end{align}
+
+\ph{Reward} The one-step reward received by the agent upon taking a lattice-level policy $a^l$ in belief $b^l$ is:
+\begin{align}
+    r^l(b^l, a^l) = r^l(b^l, \pi^l(b^l; \theta^g) = r^l(b^l, \pi^l(b^l; \pi^g(b^g)))
+    \label{eq:reward}
+\end{align}
+
+\ph{Policy} We define the hierarchical policy of the graph and lattice level policies as:
+\begin{align}
+  \pi^{*}(b) &= \arg\max_\pi \, \mathbb{E} \left[ \sum_{t=0}^{L} \gamma^t r^l(b^l_t, \pi^l(b^l_t; \pi^g(b^g_t)) \right]
+  \label{eq:optimal_policy_unified}
+\end{align}
+
+\ph{Policy decomposition and interaction} In this work, we choose to represent the graph planner's output actions $\theta^g$ as nodes $v^g_i \in V^g$ in the graph-level IRM $G^g$. These nodes are passed to the lattice planner, whose objective is to explore locally. Similarly, the lattice-level planner's output actions are nodes $v^l_i \in V^l$ in the lattice-level IRM $G^l$.  In order to maintain a tractable problem in both the graph and lattice levels, we decouple the policies in the following manner:  The lattice-level planner typically sends its action $v^l_i$ to the kinodynamic planner, which produces velocity commands for the robot.  However, if there is no exploration possible in the lattice map, the lattice-level planner passes along the graph-level planner's action $v^g_i$ to the kinodynamic planner, which encodes a new area in the graph-level IRM for the lattice-level planner to explore.  At any time the lattice-level planner may decide to continue exploring on the lattice-level IRM.  In this manner, we encourage high-fidelity local exploration without sacrificing large-scale, globally optimal decision making.
+
+In the next section, we describe the POMDP solver approach to optimizing the global and local policies of Equation \ref{eq:optimal_policy_unified}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Real-time Hierarchical Solver for ECSP-POMDPs}
+
+\input{algo_pomcp.tex}
+
+\begin{figure*}[t!]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/belief_tree_search_policy.pdf} % with an arrow
+  \caption{Illustration of coverage planning with Monte-Carlo Tree Search. A state contains a coverage state of the environment $W$ and a robot pose $q$, and the current state is $(W_o, q_2)$. From forward simulation of possible action sequences and back-propagation of the rewards (e.g., information gain per traversal distance), it can find the best action for the current state, which is \texttt{move-to-$q_1$}.}
+  \label{fig:belief-tree-search}
+\end{figure*}
+
+
+
+%\ph{Architecture}
+Algorithm~\ref{alg:hierarchicalPlanner} outlines the overall PLGRIM framework for hierarchical coverage planning.  (See also Fig.~\ref{fig:system_overview}.)
+At each replanning episode, both the graph-level and lattice-level planners employ a POMDP solver to find a policy at each level, $\pi^g$ and $\pi^l$.  To find these policies we employ POMCP, a Monte-Carlo Tree Search-based POMDP solver \cite{silver2010monte}.  This method requires only a generative model $\mathcal{G}$  (i.e., a black box simulator of the POMDP) instead of explicit mathematical models of the motion and sensing uncertainty. During each simulation, the initial state is sampled from the initial belief state, and the generative model provides a sample of the successor state $s'$, observation $z$, and reward $r$ based on the dynamics of the environment. However, the true state of the world $W^{GT}$ is unknown.  Thus, an approximate generative model $\hat{\mathcal{G}}^g$, $\hat{\mathcal{G}}^l$ is employed for each POMDP (graph and lattice) which uses a posterior distribution of the state  based on sensor data, $p(W^{GT}; a_{0:t-1}, z_{1:t})$ (omitting superscripts $(\cdot)^g, (\cdot)^l$):
+\begin{align}
+    \hat{\mathcal{G}}(\cdot) = \mathcal{F}(s, a; \, p(W^{GT}; a_{1:t}, z_{1:t})) = \mathcal{F}\big[T(\cdot), O(\cdot), R(\cdot)\big]%: \, \mathbb{S} \times \mathbb{A} \rightarrow \mathbb{S} \times \mathbb{Z} \times \mathbb{R}
+\end{align}
+
+As the robot moves through the environment, its sensors are used to update the pose-graph $\mathcal{PG}$ and the %kinodynamic 
+costmap $\bar{W}$.  These are sent to modules which update the global-level IRM $W^g$ and the lattice-level IRM $W^l$, as well as estimates of the generative models $\hat{\mathcal{G}}^g$ and $\hat{\mathcal{G}}^l$. For details of these modules, see the supplemental material.
+
+\ph{Implementation Details}
+The POMCP solver uses Monte-Carlo Tree Search over the belief space of the world. Fig.~\ref{fig:belief-tree-search} shows a sample domain where the robot has covered parts of the world, shown in white. From node 2, the robot runs POMCP with the generative model $\mathcal{G}$, to generate the MCTS tree in the center of the figure. The red path (left) explores node $a$ first and then $c$, before moving onto node 5. The blue path (right) explores node $c$ first and then $a$, before moving onto 5. The solver simulates these sequences and back-propagates the rewards to output the optimal step (\texttt{move-to-$q_1$}) for the robot.
+
+% (See Fig.~\ref{fig:belief-tree-search}). 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Receding Horizon Planning}
+
+TODO
+
+
+
+\section{Experimental Results}\label{sec:exp_results}
+
+% CONTENTS
+% - baseline
+%     : may-demo
+%     : GLP-MLP
+%     : GLP-MLP(custom-rollout)
+%         . good custom-rollout suggestions for coverage problem
+% - environments
+%     : toy example?
+%     : mission in sim
+%         . open-space (subway station)
+%         . cave1
+%         . cave2
+%     : mission with robot
+%         . caltech garden
+%         . backyard
+% - results
+%     : toy example?
+%         . average reward for different tree queries (one planning episode)
+%         . average reward for different rollout policy (one planning episode)
+%     : mission in sim
+%         . plots
+%         . path
+%     : mission with robot
+%         . screenshots (robot + irm)
+%         . path
+%         . plot (planning time, traversal distance, ...)
+
+
+% SUBWAY
+% => Gautam: 10depth-GLP
+% => Sung: NBV in subway 2x 2run
+% => David: NBV in subway 2x (1000sec~2000sec) 2runs
+% => plots
+% % : in station 1x size: 3runs for each already
+
+% CAVE
+% : cave from the center open space
+% => 1-2pm: Kyon MLP/GLP cave.world
+% => Amanda: NBV in subway 2x
+
+% ROBOT TEST FIGURE
+
+
+
+
+\subsection{Experimental Setup}
+
+% baseline algorithms (name, approach, ...)
+
+% system config
+
+% experiment environment
+% - sim (AWS, ...)
+% - robot
+
+% ...
+
+%\ph{Setup}
+We validate our proposed framework in a high-fidelity simulation as well as on physical systems. The robot system is a four-wheeled vehicle, equipped with three LiDAR range sensors returning 3D point cloud data. We test in two environments - a maze-like cave of size $400$m$ \times 100$m with complex terrain and topology, including narrow passages, dead-ends, open-spaces, and branches with fluctuating curvature, and a large subway station $120$m $\times 40$m with open spaces as well as narrow passages.  The entire autonomy stack runs in real-time on an Intel Core i7 processor with 32 GB of RAM.
+
+\ph{PLGRIM Specifics}
+We set the graph-level planner to use a varying-sized graph of $5$m resolution, and the lattice-level planner to use a 20x20 lattice with $1$m resolution.  The LLP was configured to have a higher planning rate (2Hz) so that the robot's path is quickly updated in a receding horizon fashion to ensure the safety of the vehicle. The LLP's planning horizon was restricted to a predefined number of actions on the lattice as it has fixed dimensions.  In contrast, the length of the GLP's planning horizon was defined as a function of the varying size of the graph. We constructed the graph IRM with two types of nodes: breadcrumbs denoting covered areas of the environment, and frontiers representing the boundary between known and unknown space.  
+
+\ph{Comparison Baseline: Lattice-based Next-Best-View}
+Next-best-view (NBV) is a one-step lookahead algorithm that estimates the gain of information associated with moving to a position within the robot's field-of-view $F$ \cite{bircher2016receding}. We implemented NBV on the lattice structure by computing the traversal distance (via Dijkstra's algorithm) and information gain associated with each reachable node within $F$. The reward, encoding a trade-off between information gain and traversal cost, was selected as the next position. 
+
+The reward was constructed to encode a trade-off between information gain and traversal cost.
+
+The next position was selected by choosing the node with maximum reward. 
+
+% \ph{Coverage Planner Baseline 2: Graph-based Hierarchical Frontier Selection} 
+% Frontiers in the graph encode a gain in spatial information for one lookahead step.  We implemented a hierarchical frontier-based planner where local and global frontiers are myopically selected according to two distinct objective functions. As long as the field-of-view constraints of the local reward function are satisfied, the robot is guided by the local frontier planner. When the constraints are broken, the global frontier planner is initiated and the robot is guided FAR AWAY/GLOBAL. 
+
+\subsection{Simulation Results}
+
+% The autonomous exploration results are presented in this subsection. %shown in Fig.~\ref{fig:may-demo-path} and Fig.~\ref{fig:may-demo-plot}.
+We demons
+As shown in Fig.~\ref{fig:may-demo-path}, the robot started from the staging area on the left (white open-space area) and autonomously explored the maze-like cave over 800 m in 23 min.
+Note that the ground truth environment information is not accessible by the robot.
+
+There are many sharp corned in the environment, where the frontier-based exploration approaches may fail to detect the frontiers and abandon exploring beyond the corner.
+However, LLP is able to plan for a longer horizon than frontier-based approaches with high-fidelity traversability information considered, so there was not much issues at sharp corners.
+(Note that the orange segment of the path on the right in Fig.~\ref{fig:may-demo-path} did not continue into the corner since the terrain is too rough to traverse.)
+
+There are also many dead-ends in the environment, which may cause the LLP does not see any unexplored area within the local lattice, and thus, the robot gets stuck.
+However, thanks to the hierarchical planning framework, GLP successfully guided LLP so that the robot move to unexplored area in the environment, without getting stuck.
+
+\begin{figure}[t!]
+  \centering
+  \subfloat[Cave world ($250m\times 90m$)]{%
+    \includegraphics[width=.65\columnwidth,trim={2.5cm 2cm 0cm 0cm},clip]{figures/cave_path_c2.png}
+    \label{fig:may-demo-path}
+  }
+  \\
+  \subfloat[Coverage and distance travelled]{%
+    \includegraphics[width=.6\columnwidth]{figures/cave_metrics_c2.png}
+    \label{fig:may-demo-path-coverage}
+  }
+  \\
+  \subfloat[Hardware Testing]{%
+    \includegraphics[width=.7\columnwidth,trim={0 0cm 0cm 2.5cm},clip]{figures/spot_garden_test.png}
+    \label{fig:spot-garden}
+  }
+%   \caption{Overlay of paths traveled by robots over time on the ground truth simulation environment of a maze-like cave.  Color indicates time at which the path was traversed, from purple at start to yellow at end.}
+  \caption{(a) Birds-eye view of path traversed by the PLGRIM agent in a maze-like cave environment. (b) Area covered by the robot and distance travelled during exploration. (c) shows PLGRIM runnning in real-time on the quadruped SPOT robot by Boston Dynamics}
+\end{figure}
+
+
+% \begin{figure}[!t]
+%   \centering
+%   \subfloat[Coverage]{%
+%     \includegraphics[width=0.53\columnwidth,trim={0 6.5cm 10.5cm 0},clip]{figures/s2_comparison.pdf}
+%   }
+%     \,
+%   \subfloat[Plot]{%
+%     \includegraphics[width=0.43\columnwidth,trim={15cm 8.3cm 3cm 0},clip]{figures/s2_comparison.pdf}
+%   }
+%   \caption{PLGRIM (top, across) vs. NBV (bottom, across). From left to right, the progress of coverage at $t=30$s, $t=50$s, and $t=80$s.  Note that PLGRIM explores more compactly and efficiently than the NBV approach.}
+%   \label{fig:station-baseline}
+% \end{figure}
+\begin{figure}[!t]
+  \centering
+  \subfloat[Snapshots of autonomous exploration in wide-oepn space. Dark yellow region indicates the covered area by the robot.]{%
+    \includegraphics[width=1.0\columnwidth,trim={0 7.5cm 10.5cm 0},clip]{figures/s2_comparison.pdf}
+  }
+  \\
+  \subfloat[Plot of covered area over time.]{%
+    % \includegraphics[width=0.6\columnwidth,trim={15cm 8.4cm 3cm 0},clip]{figures/s2_comparison.pdf}
+    \includegraphics[width=0.6\columnwidth]{figures/subway_station_coverage.png}
+  }
+  \caption{PLGRIM (top, across) vs. NBV (bottom, across). From left to right, the progress of coverage at $t=30$s, $t=50$s, and $t=80$s.  Note that PLGRIM explores more compactly and efficiently than the NBV approach.}
+  \label{fig:station-baseline}
+\end{figure}
+
+
+In Fig.~\ref{fig:station-baseline}, shows the quantitative results during the autonomous exploration mission.
+% (More experimental results will come.)
+
+% \begin{figure}[!t]
+  % \centering
+  % \subfloat[Hardware Testing]{%
+    % \includegraphics[width=.45\columnwidth]{figures/subway_station_coverage.png}
+  % }
+  % \caption{Total distance traveled (blue), total area covered (purple), and the number of sectors on the environment (red) versus  time.}
+  % \label{fig:may-demo-plot}
+% \end{figure}
+
+
+% \subsection{Hardware Results}
+%
+% TODO
+
+
+% Coverage at time t
+% : 4m FOV, following the robot traj, compute the total sweeping area
+
+% Local IRM sweeping at time 0:t
+% : 20m FOV, following the robot traj, compute the total reachable sweeping area
+
+% relative coverage = Area(C) / Area(L)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}\label{sec:conclusion}
+
+In this work, we have developed a hierarchical framework for exploring large-scale unknown environments in a POMDP setting. 
+To obtain a tractable solution we discretize the belief space into a robot and task-relevant graph structure which reduces our search space for good policies.
+The hierarchical planning framework and formalization of the unified optimal policy enabled scaling up the highly complex coverage problems.
+We demonstrate these capabilities in the high-fidelity dynamic simulation environment.  
+
+The future work includes learning-based methods for graph expansion information gain estimation, and a richer incorporation of risk and time into the graph planning framework.
+Another interesting venue is the extension of this framework to the multi-robot coverage problems.
+
+
+% \clearpage{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{aaai}
+\bibliography{references}  % .bib
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{Appendix: Detailed Hierarchical Planner Instantiation}\label{sec:appendix}
+
+In this section we present the detailed description of the POMDP-based coverage planner at each hierarchical level.
+
+
+% \subsection{Overall Framework} 
+
+% % \begin{figure}[t!]
+% %   \centering
+% %   \includegraphics[width=.6\textwidth]{figures/SystemOverview.png}
+% %   \caption{[WIP] System overview}
+% %   \label{fig:system_overview}
+% % \end{figure}
+
+% FIGURE: System Diagram
+% Input source to Graph-level Planner and Lattice-level Planner 
+% Connection between GLP and LLP
+% (move\_base)-level motion planner
+
+% ?? NEED TO MENTION SLAM MODULE??
+
+
+% See \url{https://docs.google.com/presentation/d/1DfS1T1_o_xenJ4o8x-9D0Uq-EO1xwyToqdSEE_V9eyU/edit#slide=id.g8cd3872972_2_0} for figure draft.
+
+
+\subsection{Graph-Level Planner} 
+
+% pseudo code
+
+\ph{Environment Representation} We employ a sparse bidirectional graph structure $G^g = (V^g, E^g)$ that captures the connectivity of the free space in the environment. We refer to this graph as the information roadmap (IRM) as its nodes $V^g$ and edges $E^g$ are enriched with environmental information. Each node $v^g \in V^g$ has attached to it a feature vector containing the probability $p(occ(v^g))$ that the node is occupied and the probability $p(cov(v^g))$ that the node has been sensed by the robot. Likewise, each edge $e_{ij}^g \in E$ has attached to it a feature vector containing the probability $p(\rho(v_i^g, v_j^g)$) of traversal between the connected nodes $v_i^g$ and $v_j^g$.
+
+\ph{State} Two-tuple $s^g=(G^g, Q^g) \in \mathbb{S}$ consisting of the current graph state $G^g$ and the robot state $v_q^g$ defined as the node closest to the robot's position. 
+
+\ph{Graph action information reward}
+We can approximate the graph action information reward $I^g(v, \pi^g)$ by the number of unknown cells within a 5m radius of the goal node $\pi^g(v_i)=v_j$.  This is an effective approximation when we assume a perfect sensor model which changes the probability of occupancy from 0.5 to either 1 or 0.  
+
+\ph{Observation} The observation $z \in \mathbb{Z}$ received by the robot are the nodes directly connected to node $v_q$. The observation model is defined as $O: V^{cov} \times S \rightarrow \mathbb{Z}$ where $S$ is one edge length.
+
+% \ph{Action} Defined in "Abstract Planner"
+
+\ph{Transition Model} We define the output of the graph policy $\pi^g(v_i^g)$ to be a neighboring node $v_j^g$, which is connected via a short path through free space. We assume that $\pi^{g}(v_i^g)$ induces a transition from nodes $v_i^g$ to $v_j^g$ with probability one:
+\begin{align}
+    T^{g} (v_i^g, \pi^g(v_i^g), v_j^g) = 1
+    s.t.~&~\rho(b_t^g,\pi(b_t)) < \psi(t)
+\end{align}
+
+The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+
+\ph{Observation}
+
+\ph{Reward} We define the graph reward as the reward gained by executing the graph-level policy $\pi^g$ from node $v$ as a function $R^g(v, \pi^g): V \times \Pi^g \to \mathbb{R}$. The reward function, as defined in Eq. (\ref{eq:reward}), includes costs associated with path length and risk and utility associated with the observation $z$ of previously uncovered nodes. 
+
+% The IRM graph grows through the addition of new nodes and edges as the robot navigates to previously unexplored areas of the map. We distinguish between two types of nodes: breadcrumb nodes and frontier nodes. Roughly speaking, breadcrumb nodes $b\in B \subset V$ encode the connectivity of free and traversable (low risk) space where the robot has previously explored, and frontier nodes $f\in F\subset V$ encode additional information about the value of exploring new locations, with $F\cup B = V$.
+
+\subsection{Lattice-Level Planner} 
+
+\ph{Environment Representation} We employ a rolling, fixed-sized lattice structure $G^\ell = (V^\ell, E^\ell)$ which is centered at the robot's current position. For ease of notation, we will drop the lattice notation for the remainder of this section. Each node object $v \in V$ has attached to it a feature vector containing the node position, probability of occupancy $p_{occ}(v)$, and probability $p_{cov}(v)$ that the node has been sensed by the robot. 
+
+\ph{Risk} Each edge object $e \in E$ contains a risk value, or the probability of failing to safely traverse from node $v_i$ to connected node $v_j$:
+\begin{align}
+    \rho_{ij}(V; W_{occ}) = \mathcal{F} \big(v_i, \, v_j; \, p(W_{occ})\big)
+\end{align}
+where $W_{occ}$ encodes the 3D volumetric occupancy information acquired from raw sensor data. Within each grid cell $w_i \in W_{occ}$, there may exist multiple risk factors, due to a different source of potential failure, including rough terrain, proximity to obstacles, slope, slippery/muddy terrain. The number of risk factors is denoted by $n_\rho$. We compute the probability of failing to traverse a cell $\rho_c(w_i)$ as:
+\begin{align}
+    \rho_c(w_i) = 1-\prod_{r=1}^{n_\rho} (1-\rho_r(w_i))
+\end{align}
+We then compute the risk of the entire path from node $v_i$ to node $v_j$ as the aggregate risk of traversing the cells along the path:
+\begin{align}
+    \rho_{ij} = 1-\prod_t^{t+\tau}(1-\rho_c(w_{i_t}))
+\end{align}
+
+
+\ph{State} Two-tuple $s=(G, Q)  \in \mathbb{S}$ consisting of the current lattice state $G$ and robot state $V_q = (v_q, \dot{v}_q)$ where $v_q \in V$ is the node representing the robot's position and $\dot{v}_q$ is the robot's velocity. 
+
+\ph{Observation} The estimated observation $z \in \mathbb{Z}$ consists of the nodes within line-of-sight of the robot node $v_q$, computed using ray-casting techniques on the prior occupancy map $W_{occ}$ in conjunction with sensor range constraints:
+\begin{align}
+    w_{cov} = \hat{O}(V, q; \, W_{occ,0}) 
+\end{align}
+
+\ph{Action} The output of the lattice policy is a control input $\vec{u}$ to the robot. 
+
+\ph{Transition Model} We define the output of the lattice policy $\pi(v_i)$ to be a neighboring node $v_j$, which is connected by edge $e_{ij}$. We assume that $\pi(v_i)$ induces a transition from nodes $v_i$ to $v_j$ equal to the probability of traversal:
+\begin{align}
+    \hat{T}^{g} (v_i, \pi(v_i), v_j) = \begin{cases} 
+    1-\rho_{ij} \; &\text{if $\rho_{ij} < \psi(t)$}\\
+    0 \; &\text{otherwise}
+    \end{cases}
+\end{align}
+The acceptable risk threshold $\psi(t)$ is time-varying. As the duration of the coverage mission progresses, the risk threshold $\psi(k)$ can increase to allow for riskier actions.
+
+\ph{Information Gain} Entropy is a measure for the uncertainty of a posterior. The entropy $H_p(x) = E[-\log p(x)]$ is the expected information that $x$ contains if $x$ happens with probability distribution $p$. The posterior uncertainty of the lattice structure is:
+\begin{align}
+    H_{p_{cov}}(V) =& 
+    -\sum_{v_i \in V} \left[ p_{cov}(v_i) \log p_{cov}(v_i) + \right. \nonumber \\
+      & \left. \left(1-p_{cov}(v_i)) \log (1-p_{cov}(v_i)\right) \right]
+\end{align}
+where $V$ is the set of nodes in the lattice, $v_i$ is the random variable associated with the $i$-th node, and $p_{cov}(v_i)$ is the probability that the node has been observed by the robot. The uncertainty reduction, or information gain, associated with an action $\pi(v_i)$ in belief $p_{cov}(V)$ is:
+\begin{align}
+    % I(\pi(v_i), w_{cov}) &= H_{p_{cov}}(V) - H_{p_{cov}}(V^\prime; \pi(v_i), w_{cov}) \\
+    I(V; \pi(v_i), w_{cov}) &= \underbrace{H_{p_{cov}}(V)}_\text{current entropy} - \underbrace{H_{p_{cov}}(V^\prime; \pi(v_i), w_{cov})}_\text{future entropy}
+\end{align}
+where the second term represents the expected future entropy of the lattice when the agent observes $z = w_{cov}$ after executing action $\pi(v_i)$. The successor world state $p_{cov}(V^\prime)$ is computed according to Bayes' Algorithm (Eq. \ref{eq:belief_update}). 
+
+\ph{Cost of Traversal} The cost of traversal associated with action $\pi(v_i)$ comprises risk, rotation, and traversal distance:
+\begin{align}
+    C(V; \pi(v_i), W_{occ}) = \alpha_{risk} \; \rho_{ij} + \alpha_{rot} \;  \cos^{-1}(\dot{\vec{v}}_q, \cdot \vec{u}) + \alpha_{dist} \; \vec{u}
+    \label{eq:traversal_cost}
+\end{align}
+To account for the distance discrepancy between a lateral and diagonal action, we define $\alpha_{dist}=1$ if $\vec{u}$ is a multiple of $\pi/2$ (lateral action) and $\alpha_{dist}=\sqrt{2}$ (diagonal action) otherwise.
+
+% (-pi, pi]
+% [-135, -90, -45, 0, 45, 90, 135, 180]
+
+% rotation penalty: $f(\dot{\vec{v}}_q, \vec{u}) = \cos^{-1}(\dot{\vec{v}}_q, \cdot \vec{u})$
+
+% $Q^\ell = \{q, \dot{q}\}$
+% $q \in \mathbb{V}$
+
+
+
+\ph{Reward Function} The one-step estimated reward is a weighted sum of information gain and traversal cost:
+\begin{align}
+    % \hat{R}(s, a) : Q^L \times (W_{cov} \times \mathbb{Z}) \rightarrow \mathbb{R} \\
+    \hat{R}(s, \pi(v_i)) = c_{I} I(V; \pi(v_i), w_{cov}) - c_{T}  C(V; \pi(v_i), W_{occ})
+    \label{eq:lattice_reward}
+    % \hat{R}(s, a) = c_{I} I(V; z) - c_{T} Cost()
+\end{align}
+
+
+% \subsection{Algorithm: NAME?? PLGRIM: Planning at Local and Global levels with Robust Information Maps}
+
+% Here we explain how the two instances of abstract coverage planners (graph-level and lattice-level planners) are combined and interact with each other in a unified framework...
+
+% Receding horizon control
+
+
+
+% \subsubsection{Global Level}
+% World represented as a graph. W = Simple bidirectional graph
+
+% $s^g = (Q^g, G^g)$. $G^g \sim W?$. Here, $Q^g$ = robot node $q \in V^g$ vertices  and $\dot{q}$ is velocity vector.
+
+% Generative model $\mathcal{G}$ is explained.
+
+% Rollout policy $\pi_{rollout}$ is random or Dijkstra-based to reach next unexplored node
+
+% Output of GLP is $\theta^l_t$, which gives a goal position to the robot executive (mobility service) to move the robot to an unexplored area of the map.
+
+% \subsubsection{Local Level}
+% World represented as a lattice. World W = dense lattice with occupancy information, similar to occupancy grid maps.
+
+% Gl = hyperlocal coverage information in the lattice (within robot FOV). Here, Qg = robot node $v_q$  and unit velocity vector $\dot{v}_q$. 
+
+% Generative model $\mathcal{G}$ is estimated from robot sensors. It assumes perfect motion model. It gives output $(s', o, r)$. Next state s' contains the new robot pose and velocity vector; . Observation o contains the occupancy information of lattice nodes within FOV of robot. r contains reward -- this includes fixed penalty for each step moved, distance penalty for moving along an edge, rotation penalty for change in robot velocity vector.
+
+% Rollout policy $\pi_{rollout}$ is Dijkstra-based to reach next unexplored node
+
+% Output of GLP is $a^{*l}_{t:T}$, which is a series of robot poses to reach, given to the robot executive.
+
+% \subsubsection{Executive}
+% Describe mobility services here. What info does it need to move to a new position?
+
+% Goal position
+
+% cost/risk maps
+
+% other stuff?
+
+
+
+
+
+
+
+\end{document}

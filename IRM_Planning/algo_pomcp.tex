@@ -8,7 +8,8 @@
 \begin{algorithm}[t!]
 \caption{Hierarchical Coverage Planner}
 \label{alg:hierarchicalPlanner}
-\begin{multicols}{2}
+% \begin{multicols}{2}
+% \begin{multicols}{1}
 % \vspace{-10pt}
 \begin{algorithmic}
 \STATE \underbar{\textbf{Function HierarchicalPlan}}
@@ -46,14 +47,14 @@
     % \STATE Update the values and the number of visits by backpropagation from the leaf node to the root node
 \UNTIL{timeout}
 % \item 
-\item Extract next N actions $a^*_{1:N}$ from $T_r$ \#N=1 for GLP. For LLP, keep going till leaf node
+\item Extract next N actions $a^*_{1:N}$ from $T_r$ \,\# N=1 for GLP. For LLP, keep going till leaf node
 % \STATE
 \RETURN $a*_{1:N}$
-\STATE
-\STATE
-\STATE
-\STATE
+% \STATE
+% \STATE
+% \STATE
+% \STATE
 \end{algorithmic}
 
-\end{multicols}
+% \end{multicols}
 \end{algorithm}
