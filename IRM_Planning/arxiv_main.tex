@@ -109,6 +109,7 @@
 \newcommand{\phdone}[1]{} % (invisible) paragraph header
 \newcommand{\ncomment}[1]{}
 \newcommand{\acomm}[1]{{\color{cyan}Ali:#1}} % Ali's comments from video
+\newcommand{\qcomm}[1]{{\color{red}Quest.}} % Ali's comments from video
 % \newcommand{\todo}[1]{{\color{red} #1 }} % Tasks to do
 \newcommand{\note}[1]{{\color{red}#1 }}
 \newcommand{\maximize}{\mathop{\mathrm{maximize}}}
@@ -425,83 +426,80 @@ Given the policy for previous planning episode, only a part of the optimal polic
  
 %  The agent must understand how its actions affect the coverage belief state. 
    
-We detail the challenges associated with solving the coverage planning problem in an unknown, large ($> 1~km$), and rugged-terrain environment over long-time scales ($> 1~hr$) using a POMDP-RHP formulation. We categorize these challenges as computational---time complexity, space complexity---or trajectory-concatenation/blah specific.
+We detail the challenges associated with solving the coverage planning problem in an unknown, large ($>\!\!1~km$), and rugged-terrain environment over long-time scales ($>\!\!1~hr$) using a POMDP-RHP formulation. We broadly identify these challenges as computational complexity--in both time and space--and safety-critical plan concatenation.
 
 \ph{Time Complexity}
-POMDP planning suffers from two computationally-constrained phenomena: \textit{curse of dimensionality} and \textit{curse of history}. The former difficulty is sourced in the fact that the state space grows exponentially with the number of state variables, and the the time complexity of a belief update is quadratic in the size of the state space: $\mathcal{O}(|\mathbb{S}|^2)$. The latter difficulty refers to the fact that the number of action-observation histories scales with the product of the action- and observation-space sizes, and the time complexity of evaluating all action-observation histories is exponential in planning depth $D$: $\mathcal{O}((|\mathbb{A}||O|)^D)$. Together, both \textit{curses} result in a POMDP planning time-complexity of $\mathcal{O}((|\mathbb{A}||O|)^D|\mathbb{S}|^2)$. As a concrete example - in order to plan a coverage trajectory spanning $1~hr$ through a $1~km$ environment with precise motions that negotiate rugged terrain ($1~m$ motions into the eight cardinal and inter-cardinal directions), the time complexity (assuming no belief update) is $\mathcal{O}((|8||1000*1000|)^{1000})$ (probably wrong). In practice, given limited onboard computational resources and online time constraints, we can't solve this problem, since planning time available may be short, especially since we're entering unknown area and terrain is difficult so we are very vulnerable to sensor and movement uncertainty blah blah blah, real-time system constraint.
+POMDP planning suffers from two computationally-constrained phenomena: \textit{curse of dimensionality} and \textit{curse of history}. The former difficulty is sourced in the fact that the state space grows exponentially with the number of state variables, and the the time complexity of a belief update is quadratic in the size of the state space: $\mathcal{O}(|\mathbb{S}|^2)$. The latter difficulty refers to the fact that the number of action-observation histories scales with the product of the action- and observation-space sizes, and the time complexity of evaluating all action-observation histories is exponential in planning depth $d$: $\mathcal{O}((|\mathbb{A}||O|)^d)$. Together, both \textit{curses} result in a POMDP planning time complexity of $\mathcal{O}((|\mathbb{A}||O|)^d|\mathbb{S}|^2)$. Hence, a crudely defined belief- and action-space can likely result in a very long planning time, which is untenable for a real-time system that must react quickly to new sensor information. An agent's onboard computational resources upper bound the planner's time complexity.
+% As a concrete example, finding the coverage path spanning $1~hr$ through a $1 km$ environment with precise motions that can negotiate rugged terrain ($1~m$ actions into the $8$ direction combined cardinal and intercardinal directions), and an observation space spanning the environment containing both the world coverage an occupancy state ($1000^2$), the time complexity is $\mathcal{O}((|8||1000^2|)^{1000})$ (probably wrong), assuming no belief update.
 
 \ph{Space Complexity}
-The memory (or space complexity?) required to store the world state, used by the planning algorithm, is dictated by the environment size, map resolution, number of world state variables ($W_{occ}, W_{cov}$), and the fidelity of the variables' values (e.g. Boolean vs. floating-point): $\mathcal{O}(|n|^2)$ where $n$ is the map size. As a concrete example, assuming use of a grid structure, the memory required to represent a $1~km$ environment at a $0.1~m$ resolution, where each cell stores occupancy and coverage probabilities (floating-point), is: . 
+The POMDP planner's space complexity is dominated by the world state representation. Primary factors affecting this complexity are the environment size, spatial resolution, number of state variables, and the fidelity of the values assigned to these variables (e.g. Boolean vs. floating-point). Accordingly, the planner's space complexity is $\mathcal{O}(|n|^k)$, where $n$ is the map size \textcolor{blue}{(map is too specific)} and $k$ is the number of state variables. As a concrete example, assuming use of a grid structure, the memory required to represent a $1~km$ environment at a $0.1~m$ resolution, where each map cell stores occupancy and coverage probabilities as a floating-point variable, is $4$ MB---an impractical allocation for an onboard system. As was the case with time complexity, an agent's onboard computational resources upper bound the planner's space complexity, particularly relating to the world state representation.
+
+\ph{Plan Concatenation}
+As the agent explores its environment, it receives more sensor information and updates its plan accordingly. Thus, in conjunction with computational-determined planning horizon, the agent can only construct a finite horizon optimal policy. Action sequences generated during consecutive planning iterations must respect the dynamic constraints of the robot (consistency), while simultaneously adapting to unexpected hazards in the environment (resiliency). As was the case with long horizon and high resolution planning objectives, plan consistency and resiliency are often in opposition. Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, finding a balance between plan consistency and resiliency, particularly for safety-critical systems operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
+
+
+% % = (1000/.1)^2*4
+
+% POMDP complexity -> relationship between factors (horizon, branching factors-action space, observation space-belief space resolution)
+% O((|action| * |observation|)^depth)
+
+% **Constraints (computational-time complexity, memory-space complexity) --> CLARIFICATION WITH OTHER PEOPLE (Kyon?)
+% --> Curse of dimensionality/history
+
+% Our case:
+% * Time complexity
+% Space > 1km
+% action (motion) resolution ~ 1m  *with the help of local motion planner
+% action set: 8-neighbor (orientation?)
+% observation: Gaussian-type? 0/1 FOV-sensor model? --> Combination of obstacle cells in FOV: O(2^(5x5)) for FOV 5m --> (Relevant to Memory)
+% Depth ~ 1000 steps
+% --> O((8*1000)^1000) --> blows up!
+
+
+% % A* algorithm
+% % 100x100 cells --> how much of cells should be memorized at a time (space complexity)
+
+% * Memory --> per O(1) each operation % (not very tightly related to algorithm's space complexity)
+% Representation of W_occ, W_cov
+
+% General:
+% Occupancy % (traversability) (--> edge connection)
+% Coverage % (IG) (--> Frontier)
+
+% Our case:
+% Real-time system constraint?
+
+% 0.1m resolution costmap
+% 1km for this resolution
+% (1e5)^2 in 2D representation
+% 1 cell in double-type --> 4byte? --> ?GB x2 (occ, cov) --> blows up!
 
 
 
 
+% We detail the challenges associated with solving the coverage planning problem in an unknown, large (> 1 km), and rugged-terrain environment over long-time scales (> 1 hr) using a POMDP-RHP formulation. We categorize these challenges as...
 
+% Hierarchical (1), Roadmap (2)
+% - Curse of Dimensionality: in partially observable environment, agent must reason in space of beliefs (probability distributions over states). If agent naively discretizes belief space, the number of discrete beliefs then grows exponentially with the number of states.
+%     - Large Environment
+%     - Rugged-terrain
 
-$\mathcal{O}(|n|^2)$, and assuming we have a double-type value
+% POMDP Solver (3)
+% - Curse of History: number of action-observation histories grows exponentially with the planning horizon.
+%     - Globally: Large environment, Long time scales
+%     - Locally: High resolution state space
 
- A memory-efficient world representation that stores high-fidelity information about the entire known environment, which can be queried when solv-ing for the long-horizon coverage policy.
+% Hierarchical (1), Roadmap (2)
+% - Memory Efficient Representation
+%     - Large Environment
+%     - Rugged-terrain
+%     - Long time scales
 
-
-POMDP complexity -> relationship between factors (horizon, branching factors-action space, observation space-belief space resolution)
-O((|action| * |observation|)^depth)
-
-**Constraints (computational-time complexity, memory-space complexity) --> CLARIFICATION WITH OTHER PEOPLE (Kyon?)
---> Curse of dimensionality/history
-
-Our case:
-* Time complexity
-Space > 1km
-action (motion) resolution ~ 1m  *with the help of local motion planner
-action set: 8-neighbor (orientation?)
-observation: Gaussian-type? 0/1 FOV-sensor model? --> Combination of obstacle cells in FOV: O(2^(5x5)) for FOV 5m --> (Relevant to Memory)
-Depth ~ 1000 steps
---> O((8*1000)^1000) --> blows up!
-
-
-% A* algorithm
-% 100x100 cells --> how much of cells should be memorized at a time (space complexity)
-
-* Memory --> per O(1) each operation % (not very tightly related to algorithm's space complexity)
-Representation of W_occ, W_cov
-
-General:
-Occupancy % (traversability) (--> edge connection)
-Coverage % (IG) (--> Frontier)
-
-Our case:
-Real-time system constraint?
-
-0.1m resolution costmap
-1km for this resolution
-(1e5)^2 in 2D representation
-1 cell in double-type --> 4byte? --> ?GB x2 (occ, cov) --> blows up!
-
-
-
-
-We detail the challenges associated with solving the coverage planning problem in an unknown, large (> 1 km), and rugged-terrain environment over long-time scales (> 1 hr) using a POMDP-RHP formulation. We categorize these challenges as...
-
-Hierarchical (1), Roadmap (2)
-- Curse of Dimensionality: in partially observable environment, agent must reason in space of beliefs (probability distributions over states). If agent naively discretizes belief space, the number of discrete beliefs then grows exponentially with the number of states.
-    - Large Environment
-    - Rugged-terrain
-
-POMDP Solver (3)
-- Curse of History: number of action-observation histories grows exponentially with the planning horizon.
-    - Globally: Large environment, Long time scales
-    - Locally: High resolution state space
-
-Hierarchical (1), Roadmap (2)
-- Memory Efficient Representation
-    - Large Environment
-    - Rugged-terrain
-    - Long time scales
-
-safety-critical RH implementation (4)
-- Receding Horizon: incomplete information / how to deal with updating belief
-    - Consistency between episodes --> path concatenation assuming belief is accurate
-    - Resilience to noise
+% safety-critical RH implementation (4)
+% - Receding Horizon: incomplete information / how to deal with updating belief
+%     - Consistency between episodes --> path concatenation assuming belief is accurate
+%     - Resilience to noise
     
     
     
@@ -531,10 +529,7 @@ safety-critical RH implementation (4)
 % - High resolution action sequence
 
 
-Efficient exploration of a large-scale environment with complex terrain requires reasoning over long temporal horizons while maintaining the ability to locally plan precise motions that can negotiate complex terrains. These two requirements---optimal action sequences spanning the known environment and high resolution action spaces---are incompatible given a robot's limited onboard computational resources during real-time planning. Therefore, the solver and action space must be designed with this resource-constraint (conflict) in mind. Furthermore, limited computational resources also necessitate a memory-efficient world representation that stores high-fidelity information about the entire known environment, which can be queried when solving for the long-horizon coverage policy. 
- 
-\ph{Plan Consistency vs. Resiliency}
-Action sequences generated during consecutive planning iterations must respect the dynamic constraints of the robot (consistency), while simultaneously adapting to unexpected hazards in the environment (resiliency). As was the case with long horizon and high resolution planning objectives, plan consistency and resiliency are often in opposition. Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, finding a balance between plan consistency and resiliency, particularly for safety-critical systems operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
+% Efficient exploration of a large-scale environment with complex terrain requires reasoning over long temporal horizons while maintaining the ability to locally plan precise motions that can negotiate complex terrains. These two requirements---optimal action sequences spanning the known environment and high resolution action spaces---are incompatible given a robot's limited onboard computational resources during real-time planning. Therefore, the solver and action space must be designed with this resource-constraint (conflict) in mind. Furthermore, limited computational resources also necessitate a memory-efficient world representation that stores high-fidelity information about the entire known environment, which can be queried when solving for the long-horizon coverage policy. 
 
 
 
