@@ -250,7 +250,7 @@ We validate our proposed framework with (a) a high-fidelity dynamic simulation i
 \section{Introduction}\label{sec:intro}
 
 \phdone{High-level mission}
-Consider a large-scale coverage mission in an unknown environment, in which a robot is tasked with exploring and searching a GPS-denied unknown area, under given time constraints. This problem has a wide range of applications such inter-planetary exploration, and search-and-rescue. \acomm{Cite some AGU/JFR and related publications} 
+Consider a large-scale coverage mission in an unknown environment, in which a robot is tasked with exploring and searching a GPS-denied unknown area, under given time constraints. This problem has a wide range of applications, such as inter-planetary exploration and search-and-rescue \cite{blank2020robotic,nagatani2013emergency}. % \acomm{Cite some AGU/JFR and related publications} 
 Essential elements of an autonomy architecture needed to realize such a mission include creating a map of the environment, accurately predicting risks, and planning motions that can meet the coverage and time requirements while minimizing risks.  In such an architecture, quantifying and planning over uncertainty is essential for creating robust, intelligent, and optimal behaviors.
 
 
@@ -352,55 +352,45 @@ The optimal policy of a POMDP for all time $t \in [0,\infty)$, $\pi_{0:\infty}^*
 \end{align}
 where $\gamma \in (0, 1]$ is a discount factor for the future rewards, $\Pi_{0:\infty}$ is the space of possible policies, and $r(b,a)=\int_s R(s,a)b(s)\mathrm{d}s$ denotes a belief reward which is the expected reward of taking action $a$ at belief $b$. \acomm{Ali says define $\pi$, but $\pi$ is just sampled from space of all policies$\Pi_{0:\infty}$?}
 
-
 % \subsection{Unknown Environment Coverage Problem Formulation}
-\subsection{Coverage Problem in Unknown Environments}
+\subsection{Unknown Environment Coverage Problems}
 
 \phdone{Coverage Problem}
-For coverage planning problems, we define the state $s$ as a tuple of robot $q$ and world states $W$, i.e., $s = (q, W)$.
-We further decompose $W$ as states that can be explored or covered by the robot ($W_{cov}$), and states that are cannot be covered because they are occupied by obstacles ($W_{occ}$). % give examples? building, trees, rocks, etc?
-
-A reward function for coverage can be defined as a function of information gain $I$ and action cost $C$ as
+For coverage planning problems, we define the state $s$ as a pair of robot $q$ and world state $W$, i.e., $s = (q, W)$.
+We further decompose the world state as $W = (W_{occ}, W_{cov})$ where $W_{occ}$ and $W_{cov}$ describe the occupancy and the coverage states of the world, respectively.
+%
+A reward function for coverage can be defined as a function of information gain $I$ and action cost $C$ as follows:
 \begin{align}
   % R(s, a) = f(I(z(s, a), W_{cov}),\; C(q, a, W_{occ})),
   % R(s, a) = f(I(W_{cov}, z),\; C(W_{occ}, q, a)),
-  R(s, a) = \mathrm{fn}(I(W_{cov}, z),\; C(W_{occ}, q, a)),
+  % R(s, a) = \mathrm{fn}(I(W_{cov}, z),\; C(W_{occ}, q, a)),
+  R(s, a) = \mathrm{fn}(I(W_{cov}, a),\; C(W_{occ}, q, a)),
   \label{eq:coverage_reward}
 \end{align}
 % where $I(z, W_{cov})$ and $C(q, a, W_{occ})$ are functions of $W_{cov}$ and $W_{occ}$, respectively.
 % where $I(W_{cov}, z)$ and $C(W_{occ}, q, a)$ are functions of $W_{cov}$ and $W_{occ}$, respectively.
-where $I(W_{cov}, z) = H(W_{cov}) - H(W_{cov} \,|\, z)$ is the reduction in entropy $H$ of $W_{cov}$ after observation $z$.  %% practically, z would contain the lidar sensor readings with the current robot pose estimation, so no need for q as an input argument for I
-$C(W_{occ}, q, a)$ is evaluated from actuation efforts and risks to take action $a$ at robot state $q$ on $W_{occ}$.
+% where $I(W_{cov}, z) = H(W_{cov}) - H(W_{cov} \,|\, z)$ is quantified as reduction of the entropy $H$ in $W_{cov}$ after observation $z$,  %% practically, z would contain the lidar sensor readings with the current robot pose estimation, so no need for q as an input argument for I
+where $I(W_{cov}, a) = H(W_{cov}) - H(W_{cov} \,|\, a)$ is quantified as reduction of the entropy $H$ in $W_{cov}$ after taking action $a$,
+and $C(W_{occ}, q, a)$ is evaluated based on the actuation efforts and risks to take action $a$ at robot state $q$ on $W_{occ}$.
 % More detailed definitions are presented in Section~\ref{sec:plgrim} [TODO: ref to subsection].
 
 \phdone{Receding Horizon Planning}
-In unknown space-coverage domains, the knowledge about $W_{cov}$ and $W_{occ}$ at run time is incomplete and often inaccurate, because we do not know which parts of the world we do not know.
+Note that in unknown space coverage domains, we do not know which parts of the world we do not know. Hence, the knowledge about $W_{cov}$ and $W_{occ}$ in Eq.~(\ref{eq:coverage_reward}) at run time is incomplete and often inaccurate.
 % By plugging Eq.~(\ref{eq:coverage_reward}) into Eq.~(\ref{eq:objective_function}), we can formulate the coverage planning problem with an infinite planning horizon in a POMDP setting.
 % Then we can identify several fundamental challenges to solve this problem.
 %
-Thus, it is fundamentally infeasible to solve an unknown environment coverage problem when formulated for an infinite horizon, as in Eq.~(\ref{eq:objective_function}).
+Thus, it is fundamentally not feasible to solve an unknown environment coverage problem when formulated as in Eq.~(\ref{eq:objective_function}) for an infinite horizon.
+Instead, Receding Horizon Planning (RHP) scheme has been widely adopted in most of the state-of-the-art in this domain \cite{bircher2016receding}.
 
 \phdone{RHP Objective Function}
-Instead, a Receding Horizon Planning (RHP) scheme has been widely adopted in most of the state-of-the-art formulations \cite{bircher2016receding}.
-In this POMDP-RHP formulation, the infinite-horizon optimal policy from Eq.~(\ref{eq:objective_function}) is altered to execute for a finite horizon $T$. This execution from time $t$ to $t+T$ is known as a planning episode.
+In POMDP formulation with RHP, the objective function in Eq.~(\ref{eq:objective_function}) is altered:
 \begin{align}
-  \pi_{t:t+T}^*(b) &= \argmax_{\pi \in \Pi_{t:t+T}} \, \mathbb{E} \sum_{t'=t}^{t+T} \gamma^{t'-t} r(b_{t'}, \pi(b_{t'}))
+  \pi_{t:t+T}^*(b) &= \argmax_{\pi \in \Pi_{t:t+T}} \, \mathbb{E} \sum_{t'=t}^{t+T} \gamma^{t'-t} r(b_{t'}, \pi(b_{t'})),
   \label{eq:receding_objective_function}
 \end{align}
-Given the policy for previous planning episode, only a part of the optimal policy, $\pi^*_{t:t+\Delta t}$ for $\Delta t \in (0, T]$, will be executed at run time. A new planning episode will start at time $t+\Delta t$ with the updated $W_{cov}$, $W_{occ}$ and reward $R(s,a)$.
-% [TODO: Additional notes on RHP]
+where $T$ is a finite planning horizon for a planning episode at time $t$.
+Given the policy for last planning episode, only a part of the optimal policy, $\pi^*_{t:t+\Delta t}$ for $\Delta t \in (0, T]$, will be executed at run time. A new planning episode will start at time $t+\Delta t$ with the updated $W_{cov}$ and $W_{occ}$.
 
-% [\sout{NOTE: $\Delta t$ and $T$ can also be variables.} Assume them to be constant here.]
-
-% NOTE: receding horizon planning for info gain rewards; no reference trajectory, reward function is past action-observation sequence dependent, possibly multiple optimal solutions if without previous path info
-
-% [NOTE: The range for $W_{cov}$ update is often smaller than that for $W_{occ}$ update. For example, from the same sensor readings (like lidar), $W_{occ}$ is updated up to 20m from the current robot position, while $W_{cov}$ is updated up to 4m based on the conservative coverage sensor model.]
-
-% [NOTE: coverage problem cannot be formulated as a Markov Decision Process (MDP) as our state space is not fully known, especially the world state. The reward function, depending on the state, also depends on the history of action-observation sequences. For example, once the robot had explored a local area and gathered the information gain, then it will get additional information gain even though it revisits that area again and again.]
-
-% Due to the nature of unknown space exploration with limited field of view,
-% receding horizon planning with optimism in the face of uncertainty or KWIK (know what it knows) [cite]
-% revised objective function for coverage with a finite receding horizon
 
 
 \subsection{Challenges} \label{ssec:challenges}
@@ -428,15 +418,21 @@ Given the policy for previous planning episode, only a part of the optimal polic
    
 We detail the challenges associated with solving the coverage planning problem in an unknown, large ($>\!\!1~km$), and rugged-terrain environment over long-time scales ($>\!\!1~hr$) using a POMDP-RHP formulation. We broadly identify these challenges as computational complexity--in both time and space--and safety-critical policy concatenation.
 
-\ph{Time Complexity}
+\subsubsection{Time Complexity} \hfill
+
+\noindent
 POMDP planning suffers from two computationally-constrained phenomena: \textit{curse of dimensionality} and \textit{curse of history}. The former difficulty is sourced in the fact that the state space grows exponentially with the number of state variables, and the the time complexity of a belief update is quadratic in the size of the state space: $\mathcal{O}(|\mathbb{S}|^2)$. The latter difficulty refers to the fact that the number of action-observation histories scales with the product of the action- and observation-space sizes, and the time complexity of evaluating all action-observation histories is exponential in planning depth $d$: $\mathcal{O}((|\mathbb{A}||O|)^d)$. Together, both \textit{curses} result in a POMDP planning time complexity of $\mathcal{O}((|\mathbb{A}||O|)^d|\mathbb{S}|^2)$. Hence, a crudely defined belief- and action-space can likely result in a very long planning time, which is untenable for a real-time system that must react quickly to new sensor information. An agent's onboard computational resources upper bound the planner's time complexity.
 % As a concrete example, finding the coverage path spanning $1~hr$ through a $1 km$ environment with precise motions that can negotiate rugged terrain ($1~m$ actions into the $8$ direction combined cardinal and intercardinal directions), and an observation space spanning the environment containing both the world coverage an occupancy state ($1000^2$), the time complexity is $\mathcal{O}((|8||1000^2|)^{1000})$ (probably wrong), assuming no belief update.
 
-\ph{Space Complexity}
+\subsubsection{Space Complexity} \hfill
+
+\noindent
 The POMDP planner's space complexity is dominated by the world state representation. Primary factors affecting this complexity are the environment size, spatial resolution, number of state variables, and the fidelity of the values assigned to these variables (e.g. Boolean vs. floating-point). Accordingly, the planner's space complexity is $\mathcal{O}(|n|^k)$, where $n$ is the map size \textcolor{blue}{(map is too specific)} and $k$ is the number of state variables. As a concrete example, assuming use of a grid structure, the memory required to represent a $1~km$ environment at a $0.1~m$ resolution, where each map cell stores occupancy and coverage probabilities as a floating-point variable, is $4$ MB---an impractical allocation for an onboard system. Thus, as was the case with time complexity, an agent's onboard computational resources upper bound the planner's space complexity, particularly relating to the world state representation.
 
-\ph{Policy Concatenation}
-As the agent explores its environment, it receives new sensor information and updates its plan accordingly in a receding horizon fashion. This continuous acquisition of new information, in conjunction with the computational constraints imposed by a real-time system, means the agent can only construct a finite horizon optimal policy during a single planning episode. The finite horizon policy generated during consecutive planning episodes must respect the dynamic constraints of the robot (consistency), while simultaneously adapting to unexpected hazards in the environment (resiliency). Plan consistency and resiliency are often in opposition. Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, finding a balance between plan consistency and resiliency, particularly for safety-critical systems operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
+\subsubsection{Policy Concatenation} \hfill
+
+\noindent
+As the agent explores its environment, it receives new sensor information and updates its plan accordingly in a receding horizon fashion. This continuous acquisition of new information, in conjunction with the computational constraints imposed by a real-time system, means that the agent can only construct a finite horizon optimal policy during a single planning episode. Policies generated during consecutive planning episodes must respect the dynamic constraints of the robot (consistency), while simultaneously adapting to unexpected hazards in the environment (resiliency). Plan consistency and resiliency are often in opposition. Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, finding a balance between plan consistency and resiliency, particularly for safety-critical systems operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
 
 
 % % = (1000/.1)^2*4
@@ -538,7 +534,7 @@ As the agent explores its environment, it receives new sensor information and up
 \label{sec:plgrim}
 
 \phdone{Framework Overview}
-In this section, we present a novel and field-hardened autonomy framework, \textit{PLGRIM (Probabilistic Local and Global Reasoning on Information roadMaps)}, for exploration of large-scale unknown environments.
+In this section, we present a novel and field-hardened coverage planning autonomy framework, \textit{PLGRIM (Probabilistic Local and Global Reasoning on Information roadMaps)}, for exploration of large-scale unknown environments.
 % Our key ideas to tackle the challenges described in Section~\ref{ssec:challenges} are as follows:
 
 We now present our key ideas to tackle the challenges described in Section~\ref{ssec:challenges}:
@@ -550,10 +546,14 @@ We now present our key ideas to tackle the challenges described in Section~\ref{
   \itemsep0em 
   \setlength{\itemsep}{0pt}
   \setlength{\parskip}{0pt}
-  \item \label{en:idea1} We propose a hierarchical belief manager/planner structure to scale up to spatially large problems.
-  \item \label{en:idea2} At each hierarchical level, we maintain and represent the belief about the world in a compact and versatile form, called Information RoadMap  or IRM.
-  \item \label{en:idea3} We employ efficient POMDP solvers adequate for each hierarchical level to reason over a longer temporal horizon within the given replanning time.
-  \item \label{en:idea4} We extend the Receding Horizon Planning (RHP) scheme to provide consistent and resilient coverage planning for safety-critical systems.
+  \item \label{en:idea1} We propose a hierarchical architecture for belief space planning that is extendable to large environments with complex terrain. 
+  \item \label{en:idea2} At each hierarchical level, we introduce a world belief representation that is compact and versatile. We refer to this representation as the Information RoadMap, or IRM.
+  \item \label{en:idea3} We propose use of efficient POMDP solvers adequate for each hierarchical level to reason over a longer temporal horizon within the given replanning time. 
+%   large-scale planning simultaneously tackle large-scale planning problem and high resolution local-scale problem
+%   We propose use of an efficient POMDP solver 
+%   We propose an efficient POMDP solver decomposition... decompose POMDP problem into ... 
+  \item \label{en:idea4} We introduce a safety-critical Receding Horizon Planning (RHP) scheme that is resilient to sudden belief updates.    
+%   consistent and resilient coverage planning for safety-critical systems. 
 \end{enumerate}
 \vspace{-4pt}
 
@@ -562,7 +562,9 @@ We now present our key ideas to tackle the challenges described in Section~\ref{
 % \begin{enumerate}[label={\arabic*)}]
 %   \item We extend the Receding Horizon Planning (RHP) scheme to provide consistent and resilient coverage planning for safety-critical systems (Challenge~\ref{en:issue3a} and \ref{en:issue3b}).
 % \end{enumerate}
-Proposals~\ref{en:idea1}~through~\ref{en:idea3}~address the \textit{Planner Horizon vs. Resolution} challenge, while proposal~\ref{en:idea4}~addresses the \textit{Plan Consistency vs. Resiliency} challenge. In the following subsections, we provide the technical details about the proposed framework.
+% \textcolor{blue}{(proposal #1 is general contribution, so it covers all challenges?)} Proposals~(1), (2)~address the \textit{Time Complexity} challenge, proposal~(3)~addresses the \textit{Space Complexity} challenge, and proposal~(4)~addresses the \textit{Policy Concatenation} challenge. 
+
+In the following subsections, we provide the technical details about the proposed framework.
 
 % (subsections)
 % 4.1. Hierarchical Belief Space Representation -- Compact world representation (IRM): 1.b
@@ -571,7 +573,8 @@ Proposals~\ref{en:idea1}~through~\ref{en:idea3}~address the \textit{Planner Hori
 % 4.4. Consistent and resilient planning (RHP formulation + adaptation): 3.a-b
 
 
-\subsection{Hierarchical POMDP Policy Formulation}
+% \subsection{Hierarchical POMDP Policy Formulation}
+% \subsection{POMDP Problem Decomposition}
 \label{ssec:hierarchical_policy}
 
 \begin{figure}[t!]
@@ -617,7 +620,7 @@ Proposals~\ref{en:idea1}~through~\ref{en:idea3}~address the \textit{Planner Hori
 	    	\node [font=\tiny,above left,align=right,black] at (0.15,0.27) {Planner};
 	    	
 	    	\node [font=\scriptsize,above left,align=right,black] at (0.15,0.97) {Planner};
-	    	\node [font=\scriptsize,above left,align=right,black] at (0.67,0.96) {Belief Value Manger};
+	    	\node [font=\scriptsize,above left,align=right,black] at (0.67,0.96) {Belief Value Manager};
 	    	\node [font=\scriptsize,above left,align=right,black] at (0.98,0.97) {Inference};
 
 	    \end{scope}
@@ -628,15 +631,35 @@ Proposals~\ref{en:idea1}~through~\ref{en:idea3}~address the \textit{Planner Hori
 
 
 
-\phdone{Formulation}
-First, we formulate the hierarchical coverage planning in a POMDP setting.
+% \phdone{Formulation}
+\subsection{Overview}
+
+We cast the coverage planning problem as a hierarchical POMDP problem in order to construct long-horizon, non-myopic action sequences. 
+% The hierarchical architecture requires decomposition of the belief and policy spaces. 
+% First, we decompose the belief state into local and global belief states. Then, given this belief decomposition, we define local and global policies that prescribes optimal action for each belief state.
+
+% First, we formulate the hierarchical coverage planning in a POMDP setting.
 %
 % Let us decompose a belief state $b$ into local and global belief states, $b^\ell = (q, W^\ell)$ and $b^g = (q, W^g)$, respectively,
 % Let us decompose a belief state $b$ into local and global belief states, $b^\ell = P((q, W^\ell))$ and $b^g = P((q, W^g))$, respectively.
-Let us decompose a belief state $b$ into local and global belief states, $b^\ell = P(q, W^\ell)$ and $b^g = P(q, W^g)$, respectively.
-$W^\ell$ is a local, rolling-window world representation with high-fidelity information, while $W^g$ is a global, unbounded world representation with approximate information (see Fig.~\ref{fig:IRMs}).
+% \ph{Belief Decomposition}
+\subsubsection{Belief Decomposition} \hfill
 
-With $\pi^\ell$ and $\pi^g$ denoting the local and global policies, respectively, we approximate the original RHP optimization problem in Eq.~(\ref{eq:receding_objective_function}) as cascaded hierarchical optimization problems as follows:
+\noindent
+First, we decompose a belief state $b$ into local and global belief states: $b^\ell = P(q, W^\ell)$ and $b^g = P(q, W^g)$, respectively.
+$W^\ell$ is a local, robot-centric, rolling-window world representation with high-fidelity information, while $W^g$ is a global, unbounded world representation with approximate information.
+
+% \ph{Policy Decomposition}
+% \subsubsection{4.1.2 Policy Decomposition} \hfill
+\subsubsection{Policy Decomposition} \hfill
+
+\noindent
+Next, we decompose the policy into local and global policies: $\pi^\ell$ and $\pi^g$, respectively. The overall policy is:
+\begin{align}
+  &\pi(b) = \pi^\ell(b^\ell; \pi^g(b^g))
+\end{align}
+%
+We approximate the original RHP optimization problem in Eq.~(\ref{eq:receding_objective_function}) as cascaded hierarchical optimization problems as follows:
 \begin{align}
   &\pi_{t:t+T}(b)
   = \argmax_{\pi \in \Pi_{t:t+T}} \, \mathbb{E} \sum_{t'=t}^{t+T} \gamma^{t'-t} r(b_{t'}, \pi(b_{t'}))
@@ -653,7 +676,7 @@ With $\pi^\ell$ and $\pi^g$ denoting the local and global policies, respectively
 \end{align}
 \normalsize
 % $\tilde{r}(b^g, \pi^g(b^g))$ is an approximate belief reward function for the global belief space.
-$r^\ell(b^\ell, \pi^\ell(b^\ell))$ and $r^g(b^g, \pi^g(b^g))$ are approximate belief reward functions for the local and global belief spaces, respectively.
+where $r^\ell(b^\ell, \pi^\ell(b^\ell))$ and $r^g(b^g, \pi^g(b^g))$ are approximate belief reward functions for the local and global belief spaces, respectively.
 %
 Note that the codomain of the global policy $\pi^g(b^g)$ is a parameter space $\Theta^\ell$ of the local policy $\pi^\ell(b^\ell; \theta^\ell)$, $\theta^\ell \!\! \in \! \Theta^\ell\!$.\,
 
@@ -661,6 +684,31 @@ Note that the codomain of the global policy $\pi^g(b^g)$ is a parameter space $\
 According to this formulation, we maintain the hierarchical belief representations (Section~\ref{ssec:belief-managers}) and solve for hierarchical POMDP policies (Section~\ref{ssec:belief-planners}).
 For local planning consistency and resiliency, we extend Eq.~(\ref{eq:llp_optimization}) to a joint optimization problem given the previous planning episode policy (Section~\ref{ssec:resilient_rhp}).
 % See Algorithm~\ref{alg:PLGRIM} for algorithmic description of the overall framework.
+
+
+% \ph{Solver Formulation}
+% We introduce some useful notations to describe the POMDP solvers.
+% % As can be seen in Eq.~(\ref{eq:objective_function}), the objective of 
+% The objective function, Eq.~(\ref{eq:objective_function}), is generally referred to as a \textit{value function}: 
+% \begin{align}
+%   V(b; \pi) &= \mathbb{E} \Big[ \sum_t \gamma^t r(b_t, \pi(b_t))] \Big],
+% \end{align}
+% % Value function:
+% % % $V(b; \pi_{t:t+T0}) = \mathbb{E} [\sum_{t'=t}^{t+T} \gamma^{t'} r(b_{t'}, \pi_{t:t+T}(b_{t'}))]$
+% % $V(b; \pi) = \mathbb{E} [\sum_t \gamma^t r(b_t, \pi(b_t))]$
+% %
+% or the expected reward when starting in belief $b$ and following policy $\pi$.
+% From a recursive form of the \textit{value function}, we can define the value of taking action $a$ in belief $b$ under a policy $\pi$ by the \textit{action-value function}:
+% \begin{align}
+%   Q(b, a; \pi) = r(b, a) + \sum_{b' \in \mathbb{B}} \gamma \mathcal{T}(b, a, b') V(b'; \pi),
+%   \label{eq:q_function}
+% \end{align}
+% where $\mathcal{T}(b, a, b')$ is the transition probability from $b$ to $b'$ by action $a$, as follows:
+% % $\mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a)$ 
+% \begin{align}
+%   \mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a).
+% \end{align}
+% A POMDP solver tries to learn $Q(b, a)$ and $V(b) = \max_{a \in \mathbb{A}} Q(b, a)$, and returns the policy $\pi$ that specifies the best action for a given belief $b$, i.e., $\pi(b) = \argmax_{a \in \mathbb{A}} Q(b, a)$.
 
 % Section 4.2: how to form local and global belief space 
 % Section 4.3: how to solve optimization at each level
@@ -670,6 +718,7 @@ For local planning consistency and resiliency, we extend Eq.~(\ref{eq:llp_optimi
 
 % \subsection{Hierarchical Belief Managers} \label{ssec:belief-managers}
 \subsection{Hierarchical Belief Representation} \label{ssec:belief-managers}
+
 \begin{algorithm}[t!]
 % {\fontsize{9.2pt}{10.6pt}\selectfont
 {\fontsize{8.5pt}{9.8pt}\selectfont
@@ -737,23 +786,36 @@ For local planning consistency and resiliency, we extend Eq.~(\ref{eq:llp_optimi
 } %fontsize environment
 \end{algorithm}
 
-
-
-\phdone{Data structure}
-For compact and versatile representation of the world, we choose a generic graph structure, $G = (N, E)$ with nodes $N$ and edges $E$, as the data structure to represent the belief about the world state.
+\noindent
+To enable efficient representation of a large, rugged-terrain environment, we decompose the world belief state into multiple representations, each encoding a different information resolution.
+% To handle a large environmnet, we abstract primitive actions into large edges to be able to work with smaller stuctures. We call this IRM...
+% For compact and versatile representation of the world, we choose a generic graph structure, $G = (N, E)$ with nodes $N$ and edges $E$, as the data structure to represent the belief about the world state.
 % [NOTE: Avoid using $V$ to denote the set of nodes as $V$ is reserved for the value function.]
 We refer to this representation as an Information RoadMap (IRM).
-We construct and maintain IRMs at two hierarchical levels, namely, Local IRM and Global IRM.
-In this subsection, we provide a formal description how these IRMs encode the information about $W_{occ}$ and $W_{cov}$ at each level.
+We construct and maintain IRMs at two hierarchical levels, referred to as the Local IRM and Global IRM. 
+% Next, we provide a formal description how these IRMs encode the information about $W_{occ}$ and $W_{cov}$ at each level.
 
+% \subsubsection{4.2.1 Belief Formulation}
+% \ph{Belief Formulation}
+\subsubsection{Belief Formulation} \hfill
 
-\phdone{Formulation}
+\noindent
 We denote the ground-truth world state by $W^*$. When exploring unknown environments, at any given time, the robot's knowledge is limited to a subset of the  world $\hat{W}\!\!\subseteq\! W^*$ that has been explored and observed by the robot so far.
 % In the unknown environment exploration domain, the ground-truth world state $W^*$ is not accessible at run time.
 % Instead, we only have access to a subset of the world, $\hat{W} \subseteq W^*$, that has been explored and observed by the robot so far.
-$\hat{W}$ has two distinct attributes, $\hat{W}_{occ}$ and $\hat{W}_{cov}$, that represent the occupancy and coverage states, respectively.
-%
-For $\hat{W} = \{\hat{w}_i\}_i$ where $\hat{w}_i$ is an individual spatial point in $\hat{W}$, we define $P(\hat{W}_{occ}) = \Pi_i P(\hat{w}_{i,occ})$ and $P(\hat{W}_{cov}) = \Pi_i P(\hat{w}_{i,cov})$ under the assumption of independence between the spatial points.
+$\hat{W}$ has two distinct attributes, $\hat{W}_{occ}$ and $\hat{W}_{cov}$, that represent the occupancy and coverage states, respectively. The world state $\hat{W}$ can be partitioned into discrete areas: 
+\begin{align}
+  \hat{W} = \{\hat{w}_i\}_i
+\end{align}
+where each $\hat{w}_i$ identifies a discrete area in space and stores an occupancy and coverage value. 
+Assuming independence between $\hat{w}_i$, we approximate the world \textit{occupancy belief} and \textit{coverage belief} as the product of the marginal probabilities, as follows, respectively:
+\begin{align}
+  &P(\hat{W}_{occ}) = \Pi_i P(\hat{w}_{i,occ}), \\
+  &P(\hat{W}_{cov}) = \Pi_i P(\hat{w}_{i,cov}). 
+  \label{eq:coverage_belief}
+\end{align}
+
+% For $\hat{W} = \{\hat{w}_i\}_i$ where $\hat{w}_i$ identifies a discrete area in $\hat{W}$, we define $P(\hat{W}_{occ}) = \Pi_i P(\hat{w}_{i,occ})$ and $P(\hat{W}_{cov}) = \Pi_i P(\hat{w}_{i,cov})$ under the assumption of independence between the discrete areas.
 Additionally, let us denote the local patch of $\hat{W}$ around the robot by $\hat{W}^\ell$.
 %
 % (optional) the following holds:
@@ -765,8 +827,15 @@ Additionally, let us denote the local patch of $\hat{W}$ around the robot by $\h
 %   \label{eq:W_independence}
 % \end{align}
 
+\subsubsection{Belief Construction} \hfill
 
-\phdone{Information Sources}
+\noindent
+\textcolor{blue}{Now we should define "discrete area" more precisely in terms of graph structure} For compact and versatile representation of the world, we choose a generic graph structure, $G = (N, E)$ with nodes $N$ and edges $E$, as the data structure to represent the belief about the world state.
+\textcolor{blue}{We should probably define actions in terms of edges here, rather than in Section 4.3 --}
+In our framework, we define an action as a motion control from the current node to a neighbor node connected with an edge on the IRM.
+For example, if $a \in \mathbb{A}$ is a motion from node $\hat{w}_i \in N$ to node $\hat{w}_j \in N$ along edge $e_{ij} \in E$
+
+% \ph{Information Sources}
 Information to construct IRMs is sourced from other subsystems (see Fig.~\ref{fig:framework}).
 A \textit{Riskmap} is a local rolling-window map that provides the risk assessment from the range sensor readings, %for a robot to be placed at each point of the map, 
 which effectively encodes $P(\hat{W}^\ell_{occ})$.
@@ -775,19 +844,16 @@ which effectively encodes $P(\hat{W}^\ell_{occ})$.
 A \textit{Pose Graph} %, provided by the SLAM (Simultaneous Localization and Mapping) module, 
 provides the robot's past trajectory in the global coordinate frame, where $P(\hat{W}_{cov})$ can be inferred from.
 
-
-\phdone{Local IRM}
-% An algorithmic description about Local and Global IRM construction is presented in Algorithm~\ref{alg:IRMs}.
-%
-A Local IRM $G^\ell$ is rather straightforward to construct given a Riskmap and a Pose Graph.
-Once we have uniformly down-sampled nodes at $\{\hat{w}^\ell_i\}_i \subset \hat{W}^\ell$,
-we compute $P(\hat{w}^\ell_{i,occ})$ and $P(\hat{w}^\ell_{i,cov})$ from the Riskmap and Pose Graph for each node and encode them as node properties.
-For each edge to a neighbor node we compute a traversal risk and distance that effectively encodes $\hat{W}^\ell_{occ}$ information between the two nodes.
+\begin{enumerate}[label={\arabic*)}]
+  \itemsep0em 
+  \setlength{\itemsep}{0.2em}
+%   \setlength{\parskip}{0pt}
+  \item \textit{Local Belief}: 
+  A Local IRM $G^\ell$ is rather straightforward to construct given a Riskmap and a Pose Graph.
+Once we have uniformly down-sampled nodes at $\{\hat{w}^\ell_i\}_i \subset \hat{W}^\ell$, we compute $P(\hat{w}^\ell_{i,occ})$ and $P(\hat{w}^\ell_{i,cov})$ from the Riskmap and Pose Graph for each node and encode them as node properties. For each edge to a neighbor node we compute a traversal risk and distance that effectively encodes $\hat{W}^\ell_{occ}$ information between the two nodes.
 Hence, a Local IRM contains relatively high-fidelity information with a high resolution, but locally.
 
-
-
-\phdone{Global IRM}
+  \item \textit{Global Belief}:
 Construction of a Global IRM $G^g$ needs more care, so that it can scale up to large $\hat{W}$, which may span up to several kilometers in this work.
 Thus, instead of a densely sampled graph, we use a sparse graph structure for a Global IRM.
 % A Global IRM is of a sparse graph structure, so that it can scale up to large $\hat{W}$, which may span up to several kilometers in this work.
@@ -804,6 +870,36 @@ An additional condition for a candidate node $\hat{w}_i$ to be actually a breadc
 In short, a Global IRM captures the free-space connectivity with a notion of coverage, and does not explicitly encode highly likely occupied, untraversable, or uncertain subspaces of $\hat{W}$ for compact representation of the large-scale world.
 %
 For a detailed description of Global IRM construction process, see Algorithm~\ref{alg:IRMs}.
+\end{enumerate}
+
+% \ph{Local Belief}
+% An algorithmic description about Local and Global IRM construction is presented in Algorithm~\ref{alg:IRMs}.
+%
+% A Local IRM $G^\ell$ is rather straightforward to construct given a Riskmap and a Pose Graph.
+% Once we have uniformly down-sampled nodes at $\{\hat{w}^\ell_i\}_i \subset \hat{W}^\ell$,
+% we compute $P(\hat{w}^\ell_{i,occ})$ and $P(\hat{w}^\ell_{i,cov})$ from the Riskmap and Pose Graph for each node and encode them as node properties.
+% For each edge to a neighbor node we compute a traversal risk and distance that effectively encodes $\hat{W}^\ell_{occ}$ information between the two nodes.
+% Hence, a Local IRM contains relatively high-fidelity information with a high resolution, but locally.
+
+
+
+% \ph{Global Belief}
+% Construction of a Global IRM $G^g$ needs more care, so that it can scale up to large $\hat{W}$, which may span up to several kilometers in this work.
+% Thus, instead of a densely sampled graph, we use a sparse graph structure for a Global IRM.
+% % A Global IRM is of a sparse graph structure, so that it can scale up to large $\hat{W}$, which may span up to several kilometers in this work.
+% %
+% It has two subsets of nodes, $N^g_b$ and $N^g_f$, so-called \textit{breadcrumb} and \textit{frontier} nodes, respectively, where $N^g_b \cap N^g_f = \emptyset$ and $N^g_b \cup N^g_f = N^g \! \subset \! \hat{W}$.
+% %
+% The breadcrumb nodes capture the \textit{covered free} space of $\hat{W}$, i.e., $N^g_b \subset \{\hat{w}_i | P(\hat{w}_{i,\neg occ} \wedge \hat{w}_{i,cov}) > \bar{\psi}_b\}$, while
+% the frontier nodes capture the \textit{uncovered free} space, i.e., $N^g_f \subset \{\hat{w}_i | P(\hat{w}_{i,\neg occ} \wedge \hat{w}_{i,\neg cov}) > \bar{\psi}_f\}$,
+% where $\bar{\psi}_b$ and $\bar{\psi}_f$ are some thresholds.
+% %
+% An additional condition for a candidate node $\hat{w}_i$ to be actually a breadcrumb or frontier node is that there should be a traversable path to nearby existing nodes in $G^g$, i.e., $\exists \hat{w}^g_j \in \mathcal{N}_{G^g}(\hat{w}_i)$ such that the traversal risk $\rho_{ij} \in [0, 1] < \bar{\psi}_e$ for $\hat{w}_i$ and $\hat{w}^g_j$, where $\mathcal{N}_{G^g}(\cdot)$ is a set of nearby nodes in $G^g$ and $\bar{\psi}_e$ is some threshold.
+% %
+% % In summary, we do not explicitly encode highly likely occupied, untraversable, or uncertain subspaces of $\hat{W}$ in a Global IRM for compact representation.
+% In short, a Global IRM captures the free-space connectivity with a notion of coverage, and does not explicitly encode highly likely occupied, untraversable, or uncertain subspaces of $\hat{W}$ for compact representation of the large-scale world.
+% %
+% For a detailed description of Global IRM construction process, see Algorithm~\ref{alg:IRMs}.
 
 
 
@@ -812,52 +908,119 @@ For a detailed description of Global IRM construction process, see Algorithm~\re
 
 Given Local and Global IRMs as the hierarchical belief representation, we solve the cascaded hierarchical POMDP problems, Eq.~(\ref{eq:llp_optimization}) and Eq.~(\ref{eq:glp_optimization}), for coverage in an unknown environment.
 
+% \ph{Solver Formulation}
+\subsubsection{Solver Formulation} \hfill
 
-
-\phdone{General POMDP Solver Formulation}
+\noindent
 We introduce some useful notations to describe the POMDP solvers.
 % As can be seen in Eq.~(\ref{eq:objective_function}), the objective of 
-The objective function of Eq.~(\ref{eq:objective_function}) in general is called a value function $V(b; \pi) = \mathbb{E} [\sum_t \gamma^t r(b_t, \pi(b_t))]$.
+The objective function, Eq.~(\ref{eq:objective_function}), is generally referred to as a \textit{value function}: 
+\begin{align}
+  V(b; \pi) &= \mathbb{E} \Big[ \sum_t \gamma^t r(b_t, \pi(b_t))] \Big],
+\end{align}
 % Value function:
 % % $V(b; \pi_{t:t+T0}) = \mathbb{E} [\sum_{t'=t}^{t+T} \gamma^{t'} r(b_{t'}, \pi_{t:t+T}(b_{t'}))]$
 % $V(b; \pi) = \mathbb{E} [\sum_t \gamma^t r(b_t, \pi(b_t))]$
 %
-From a recursive form of the value function, we can define a Q-value function for a belief-action pair as follows:
+or the expected reward when starting in belief $b$ and following policy $\pi$.
+From a recursive form of the \textit{value function}, we can define the value of taking action $a$ in belief $b$ under a policy $\pi$ by the \textit{action-value function}:
 \begin{align}
   Q(b, a; \pi) = r(b, a) + \sum_{b' \in \mathbb{B}} \gamma \mathcal{T}(b, a, b') V(b'; \pi),
   \label{eq:q_function}
 \end{align}
-where $\mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a)$ denotes the transition probability from $b$ to $b'$ by action $a$.
-%
+where $\mathcal{T}(b, a, b')$ is the transition probability from $b$ to $b'$ by action $a$, as follows:
+% $\mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a)$ 
+\begin{align}
+  \mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a).
+\end{align}
 A POMDP solver tries to learn $Q(b, a)$ and $V(b) = \max_{a \in \mathbb{A}} Q(b, a)$, and returns the policy $\pi$ that specifies the best action for a given belief $b$, i.e., $\pi(b) = \argmax_{a \in \mathbb{A}} Q(b, a)$.
 
 
-\phdone{Reward Function--Information Gain}
-The reward function in Eq.~(\ref{eq:coverage_reward}) is concretely defined for our belief representation as follows.
-A Local IRM $G^\ell = (N^\ell, E^\ell)$ contains $P(\hat{w}^\ell_{i,cov})$ value for each node $\hat{w}^\ell_i \in N^\ell$,
-and the entropy in the belief of world coverage state is defined as 
-$H(W^\ell_{cov}) = - \sum_{i}^{|N^\ell|} [ P(\hat{w}^\ell_{i,cov}) \log P(\hat{w}^\ell_{i,cov}) + P(\hat{w}^\ell_{i,\neg cov}) \log P(\hat{w}^\ell_{i,\neg cov}) ]$ under the spatial independence assumption,
-so that we can compute the information gain $I(W^\ell_{cov}, z)$ given an observation $z$.
-The same formulation applies to the Global IRM $G^g$ and $I(W^g_{cov}, z)$.
 
+% \phdone{General POMDP Solver Formulation}
+% We introduce some useful notations to describe the POMDP solvers.
+% % As can be seen in Eq.~(\ref{eq:objective_function}), the objective of 
+% The objective function, Eq.~(\ref{eq:objective_function}), is generally referred to as a \textit{value function}: 
+% \begin{align}
+%   V(b; \pi) &= \mathbb{E} \Big[ \sum_t \gamma^t r(b_t, \pi(b_t))] \Big],
+% \end{align}
+% % Value function:
+% % % $V(b; \pi_{t:t+T0}) = \mathbb{E} [\sum_{t'=t}^{t+T} \gamma^{t'} r(b_{t'}, \pi_{t:t+T}(b_{t'}))]$
+% % $V(b; \pi) = \mathbb{E} [\sum_t \gamma^t r(b_t, \pi(b_t))]$
+% %
+% or the expected reward when starting in belief $b$ and following policy $\pi$.
+% From a recursive form of the \textit{value function}, we can define the value of taking action $a$ in belief $b$ under a policy $\pi$ by the \textit{action-value function}:
+% \begin{align}
+%   Q(b, a; \pi) = r(b, a) + \sum_{b' \in \mathbb{B}} \gamma \mathcal{T}(b, a, b') V(b'; \pi),
+%   \label{eq:q_function}
+% \end{align}
+% where $\mathcal{T}(b, a, b')$ is the transition probability from $b$ to $b'$ by action $a$, as follows:
+% % $\mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a)$ 
+% \begin{align}
+%   \mathcal{T}(b, a, b') = \sum_{z \in \mathbb{Z}} P(b' | b, a, z) P(z | b, a).
+% \end{align}
+% A POMDP solver tries to learn $Q(b, a)$ and $V(b) = \max_{a \in \mathbb{A}} Q(b, a)$, and returns the policy $\pi$ that specifies the best action for a given belief $b$, i.e., $\pi(b) = \argmax_{a \in \mathbb{A}} Q(b, a)$.
 
-\phdone{Reward Function--Action Cost}
+% \phdone{Reward Function--Information Gain}
+% The reward function, Eq.~(\ref{eq:coverage_reward}), is concretely defined for our belief representation as follows.
+% Given an IRM $G = (N, E)$ containing $P(\hat{w}_{i,cov})$ value for each node $\hat{w}^\ell_i \in N^\ell$. 
+
+% \ph{Solver Construction}
+% \subsubsection{Solver Construction} \hfill
+\subsubsection{Generalized Coverage Reward} \hfill
+
+\noindent
+% \ph{Coverage Information}
+% The \textit{coverage belief} of the IRM $G = (N, E)$ containing nodes $\{\hat{w}_i, \cdots ,\hat{w}_k\} \in N$ is defined as: 
+% \begin{align}
+%     \nonumber
+%     P_c(V) = \{P(\hat{w}_{i,cov}), \cdots , P(\hat{w}_{k,cov})\}
+% \end{align}
+% where $p_c(v_i)$ is the occupancy Bernoulli distribution over a local map centered at node $v_i$. 
+% Given a \textit{coverage belief} in Eq.~(\ref{eq:coverage_belief}),  
+Entropy provides a measure of uncertainty of a random variable's belief. Given an IRM $G = (N, E)$ containing a $P(\hat{w}_{i,cov})$ value for each node $\hat{w}_i \in N$, the entropy of the world coverage state is:
+% the amount of information needed to represent an event, given a belief. uncertainty of the coverage state can be represented as the entropy of the coverage belief. 
+% Entropy of the world \textit{coverage belief} measures the uncertainty about the . The entropy of a random variable $x\sim p(x)$ is defined as $H_p(x) = E[-\log p(x)]$. Thus, the IRM coverage entropy is defined as:
+\begin{multline}
+  H(P(\hat{W}_{cov})) = - \sum_{i}^{|N|} \Big[ P(\hat{w}_{i,cov}) \log P(\hat{w}_{i,cov}) \\ 
+  + P(\hat{w}_{i,\neg cov}) \log P(\hat{w}_{i,\neg cov}) \Big].
+\end{multline}
+% and the entropy in the belief of the world coverage state is defined as: 
+% \begin{multline}
+%   H(W^\ell_{cov}) = - \sum_{i}^{|N^\ell|} \Big[ P(\hat{w}^\ell_{i,cov}) \log P(\hat{w}^\ell_{i,cov}) \\ 
+%   + P(\hat{w}^\ell_{i,\neg cov}) \log P(\hat{w}^\ell_{i,\neg cov}) \Big]
+% \end{multline}
+% $H(W^\ell_{cov}) = - \sum_{i}^{|N^\ell|} [ P(\hat{w}^\ell_{i,cov}) \log P(\hat{w}^\ell_{i,cov}) + P(\hat{w}^\ell_{i,\neg cov}) \log P(\hat{w}^\ell_{i,\neg cov}) ]$ 
+% under the spatial independence assumption, so that we can compute the information gain $I(W^\ell_{cov}, z)$ given an observation $z$.
+% The same formulation applies to the Global IRM $G^g$ and $I(W^g_{cov}, z)$.
+The coverage information gain (i.e., coverage uncertainty reduction) in \textit{coverage belief} $P(\hat{W}_{cov})$ induced by an action $a$ is defined as:
+\begin{align}
+    % I(\lambda(v_i), w_{cov}) &= H_{p_{c}}(V) - H_{p_{c}}(V^\prime; \lambda(v_i), w_{cov}) \\
+    I(\hat{W}_{cov} \, | \, a) &= \underbrace{H(P(\hat{W}_{cov}))}_\text{current entropy} - \underbrace{H(P(\hat{W}_{cov})^\prime \, | \, a)}_\text{future entropy}
+\end{align}
+where the second term represents the expected future entropy of the graph after the agent has executed action $a$. 
+
 The action cost function is instantiated for the specific action set for each hierarchical level, but formulated in the same way.
-Let us omit the superscript $(\cdot)^\ell$ or $(\cdot)^g$ for notational brevity.
-In our framework, we define an action as a motion control from the current node to a neighbor node connected with an edge on the IRM.
-For example, if $a \in \mathbb{A}$ is a motion from node $\hat{w}_i \in N$ to node $\hat{w}_j \in N$ along edge $e_{ij} \in E$, then the action cost is computed as
-$C(\hat{W}_{occ}, q, a) = k_d d_{ij} + k_\rho \rho_{ij} + k_\mu \mu_{ij}(q)$,
+% Let us omit the superscript $(\cdot)^\ell$ or $(\cdot)^g$ for notational brevity.
+% In our framework, we define an action as a motion control from the current node to a neighbor node connected with an edge on the IRM.
+% For example, if $a \in \mathbb{A}$ is a motion from node $\hat{w}_i \in N$ to node $\hat{w}_j \in N$ along edge $e_{ij} \in E$, then the action cost is computed as:
+\begin{align}
+    C(\hat{W}_{occ}, q, a) = k_d d_{ij} + k_\rho \rho_{ij} + k_\mu \mu_{ij}(q)
+\end{align}
+% $C(\hat{W}_{occ}, q, a) = k_d d_{ij} + k_\rho \rho_{ij} + k_\mu \mu_{ij}(q)$,
 where $d_{ij}$ and $\rho_{ij}$ are the traversal distance and risk along edge $e_{ij}$, respectively.
-$\mu_{ij}(q)$ is a cost associated with the motion primitive considering the robot's non-holonomic constraints, the current heading status, etc.
-$k_d$, $k_\rho$, and $k_\mu$ are constant weights.
+$\mu_{ij}(q)$ is a cost associated with the motion primitive considering the robot's non-holonomic constraints, such as the current heading direction. Constants $k_d$, $k_\rho$, and $k_\mu$ weigh the importance of traversal distance, risk, and motion primitive history on the total action cost.
+
 Then, finally the reward function is defined as a weighted sum of the information gain and action cost:
-$R(s, a) = k_I I(W_{cov}, z) - k_C C(W_{occ}, q, a))$,
+\begin{align}
+    R(s, a) = k_I I(W_{cov}, z) - k_C C(W_{occ}, q, a)),
+\end{align}
 where $k_I$ and $k_C$ are the constant weights.
 
 
 
 %% MANUALLY NUMBERED!
-\subsubsection{4.3.1. Global Coverage Planner} \label{sssec:GCP}
+% \subsubsection{4.3.1. Global Coverage Planner} \label{sssec:GCP}
 \begin{figure}[t!]
   \centering
   \includegraphics[width=.8\columnwidth]{figures/QMDP_Policy.png}
@@ -918,83 +1081,215 @@ where $k_I$ and $k_C$ are the constant weights.
 \end{figure*}
 
 
+% \begin{enumerate}[label={\arabic*)}]
+%   \itemsep0em 
+%   \setlength{\itemsep}{0.2em}
+% %   \setlength{\parskip}{0pt}
+%   \item \textit{Global Coverage Planner}: 
+% \phdone{GCP Functionality}
+% In our cascaded hierarchical optimization framework, we first solve for the global policy in Eq.~(\ref{eq:glp_optimization}).
+% As mentioned in Section~\ref{ssec:hierarchical_policy}, the outcome of the global policy is a parameter for the local policy.
+% This means that Global Coverage Planner (GCP) for Eq.~(\ref{eq:glp_optimization}) provides \textit{global guidance} to Local Coverage Planner (LCP) for Eq.~(\ref{eq:llp_optimization}).
+% The global guidance is for the coverage performance and completeness in a global sense, and especially helpful when there is no local area for LCP to cover.
+
+% \phdone{GCP Problem Characteristics--Large-scale}
+% There are special characteristics to note in global coverage planning. 
+% First, the environment size can be very large (> 1~km), so GCP should be able to reason over more than hundreds of nodes on the Global IRM.
+% %
+% %
+% \phdone{GCP Problem Characteristics--Frontiers as terminal nodes}
+% Second, as the role of GCP is to guide the robot to an uncovered area and let LCP lead the local coverage behavior, GCP's policy search can terminate at frontier nodes on the Global IRM.
+% %
+% %
+% \phdone{GCP Problem Approximation}
+% Note that the second characteristic can help to mitigate the challenge from the first characteristic.
+% By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
+% Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+
+
+% \phdone{POMDP Solver for GCP}
+% In this work, we adopt the QMDP approach for the global coverage planning \cite{littman1995learning}.
+% The key idea of QMDP is to assume the state becomes fully observable after one step of action, so that the value function for further actions can be evaluated efficiently in an MDP (Markov Decision Process) setting.
+% In our global coverage planning domain, we can consider the first step of action is for the robot to snap to one of the nearby node in Global IRM, and then, the robot pose is assumed to be fully observable, while the world occupancy and coverage states remain constant.
+
+
+% \phdone{QMDP Details}
+% More formally, we solve for $Q^g_{\mathrm{MDP}}(s^g, a^g)$ by ignoring uncertainty in robot pose $q^g$ and the change of $\hat{W}^g_{cov}$, where $s^g \in N^g$ and $a^g$ is a control to move to a neighbor node $s'^g \in N^g$.
+% In this MDP setting, $Q^g_{\mathrm{MDP}}(s^g, a^g)$ can be learned by Value Iteration very efficiently even for a long discount horizon.
+% %
+% Then, we can evaluate the Q-function in Eq.~(\ref{eq:q_function}) in a POMDP setting for the current belief and the feasible one-step actions, i.e.,
+% $Q(b^g, a^g) = \int_{s^g} b(s^g) Q^g_{\mathrm{MDP}}(s^g, a^g) \mathrm{d}s^g$.
+% %
+% Finally, a POMDP policy can be obtained as follows:
+% $\pi^g(b^g) = \argmax_{a^g \in \mathbb{A}^g} Q(b^g, a^g)$.
+% %
+% An example of the GCP policy is depicted in Fig.~\ref{fig:graph-level-planner}.
+% % [TODO] See Algorithm~\ref{alg:PLGRIM} for more details.
+
+%   \item \textit{Local Coverage Planner}:
+% \phdone{LCP Functionality}
+% In the hierarchical optimization framework, Local Coverage Planner (LCP) is who solves Eq.~(\ref{eq:llp_optimization}), given a parameter input from Global Coverage Planner (GCP).
+% LCP constructs a high-fidelity policy by considering the information gathering (with visibility check given obstacles), traversal risk (based on proximity to obstacles, terrain roughness, and slopes), and robot's mobility constraints (such as acceleration limits and non-holonomic constraints of wheeled robots).
+
+
+% \phdone{LCP Problem Characteristics}
+% % LCP has multiple operation modes based on the parameter input $\theta^\ell \in \Theta^\ell = \mathbb{A}^g$ from GCP,
+% LCP has multiple operation modes based on the parameter input $\theta^\ell = a^g \in \mathbb{A}^g$ from GCP,
+% where the target frontier node in Global IRM, $\hat{w}^g_f \in N^g$, can be extracted from the given global-level control $a^g$.
+% %
+% If $\hat{w}^g_f$ is within the Local IRM range, i.e., $\hat{w}^g_f \in \hat{W}^\ell$, then LCP performs the normal optimization as described in Eq.~(\ref{eq:llp_optimization}) for the local coverage behaviors.
+% If $\hat{w}^g_f \notin \hat{W}^\ell$, LCP simply instantiates a high-fidelity control of the given global-level control $a^g$ to follow the guidance of GCP.
 
 
 
+% \phdone{POMDP Solver LCP}
+% In order to solve Eq.~(\ref{eq:llp_optimization}) we employ POMCP (Partially Observable Monte Carlo Planning) algorithm \cite{silver2010monte}.
+% POMCP is a widely-adopted POMDP solver that leverages the Monte Carlo sampling technique to alleviate both of the curse of dimensionality and history.
+% Given a generative model (or a black box simulator) for discrete action and observation spaces, POMCP can learn the value function of near-optimally reachable belief space with adequate exploration-exploitation trade-off.
 
 
+% \phdone{POMCP Details}
+% More concretely, POMCP evaluates $Q^\ell(b^\ell, a^\ell)$ in Eq.~(\ref{eq:q_function}) by unrolling the recursive value backpropagation, with a set of sampled action-observation sequences.
+% % [TODO] Provide a more concrete example with formulation.
+% UCT algorithm for action selection helps to balance between exploration and exploitation to learn the Q-values.
+% Initially it explored the search space (possible action-observation sequences) with a random or heuristically guided rollout policy.
+% While incrementally building the belief tree it gradually exploits the learned values for more focused exploration with likely-optimal action-observation sequences (i.e., more focused exploration of the likely-reachable subspace by the optimal policy).
+% See illustration of local coverage planning in Fig.~\ref{fig:lattice-level-planner}.
+% \end{enumerate}
 
-\phdone{GCP Functionality}
-In our cascaded hierarchical optimization framework, we first solve for the global policy in Eq.~(\ref{eq:glp_optimization}).
-As mentioned in Section~\ref{ssec:hierarchical_policy}, the outcome of the global policy is a parameter for the local policy.
-This means that Global Coverage Planner (GCP) for Eq.~(\ref{eq:glp_optimization}) provides \textit{global guidance} to Local Coverage Planner (LCP) for Eq.~(\ref{eq:llp_optimization}).
-The global guidance is for the coverage performance and completeness in a global sense, and especially helpful when there is no local area for LCP to cover.
+\subsubsection{Local-Global Coverage Planner Coordination} \hfill
+% \subsubsection{Cascaded Local/Global Planner} \hfill
 
-\phdone{GCP Problem Characteristics--Large-scale}
-There are special characteristics to note in global coverage planning. 
-First, the environment size can be very large (> 1~km), so GCP should be able to reason over more than hundreds of nodes on the Global IRM.
+\noindent
+In our cascaded hierarchical optimization framework, we first solve for the global policy in Eq.~(\ref{eq:glp_optimization}). The global policy solution then serves as an input parameter to the local policy in Eq.~(\ref{eq:llp_optimization}). This means that Global Coverage Planner (GCP) provides \textit{global guidance} to the Local Coverage Planner (LCP).
+
+% In our cascaded hierarchical optimization framework, we first solve for the global policy in Eq.~(\ref{eq:glp_optimization}). The output of the global policy serves as a parameter for the local policy.
+
+% This means that Global Coverage Planner (GCP), Eq.~(\ref{eq:glp_optimization}), provides \textit{global guidance} to Local Coverage Planner (LCP), Eq.~(\ref{eq:llp_optimization}).
+
+% The global guidance is for the coverage performance and completeness in a global sense, and especially helpful when there is no local area for LCP to cover.
+
+% \phdone{LCP Functionality}
+% In the hierarchical optimization framework, Local Coverage Planner (LCP) is who solves Eq.~(\ref{eq:llp_optimization}), given a parameter input from Global Coverage Planner (GCP).
+
+The role of GCP is to construct a low-fidelity policy that provides global guidance to uncovered areas (frontier nodes in Global IRM), at which point, LCP assumes control and instructs a local coverage behavior. Since the environment can be very large (> 1~km), GCP must be capable of reasoning over hundreds of nodes on the Global IRM. To alleviate this scalability challenge, we assume that GCP's policy terminates at frontier nodes. By classifying frontier nodes as terminal in the belief space, we can assume no changes to the world coverage state before termination. Therefore, we omit $W$ from the state space for GCP, and can consequently utilize simple and efficient POMDP solvers for long horizon planning.
+
+% By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
+% Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+
+% However, because LCP takes control, GCP's policy search can terminate at frontier nodes on the Global IRM.
+
+% By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
+% Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+
+% Since the environment can be very large (> 1~km), GCP must reason over hundreds of nodes on the Global IRM.
+
+% \phdone{GCP Problem Characteristics--Large-scale}
+% There are special characteristics to note in global coverage planning. 
+% First, the environment size can be very large (> 1~km), so GCP should be able to reason over more than hundreds of nodes on the Global IRM.
 %
 %
-\phdone{GCP Problem Characteristics--Frontiers as terminal nodes}
-Second, as the role of GCP is to guide the robot to an uncovered area and let LCP lead the local coverage behavior, GCP's policy search can terminate at frontier nodes on the Global IRM.
-%
-%
-\phdone{GCP Problem Approximation}
-Note that the second characteristic can help to mitigate the challenge from the first characteristic.
-By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
-Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+% \phdone{GCP Problem Characteristics--Frontiers as terminal nodes}
+% Second, as the role of GCP is to guide the robot to an uncovered area and let LCP lead the local coverage behavior, GCP's policy search can terminate at frontier nodes on the Global IRM.
+% %
+% %
+% \phdone{GCP Problem Approximation}
+% Note that the second characteristic can help to mitigate the challenge from the first characteristic.
+% By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
+% Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+
+The role of LCP is to construct a high-fidelity policy that provides local guidance to uncovered areas by considering information gathering (with visibility check given obstacles), traversal risk (based on proximity to obstacles, terrain roughness, and slopes), and the robot's mobility constraints (such as acceleration limits and non-holonomic constraints of wheeled robots).
 
 
-\phdone{POMDP Solver for GCP}
+\phdone{LCP Problem Characteristics}
+% LCP has multiple operation modes based on the parameter input $\theta^\ell \in \Theta^\ell = \mathbb{A}^g$ from GCP,
+LCP has multiple operation modes based on the parameter input $\theta^\ell = a^g \in \mathbb{A}^g$ from GCP. Note that the target frontier node in Global IRM, $\hat{w}^g_f \in N^g$, can be extracted from the global-level control $a^g$.
+%
+If $\hat{w}^g_f$ is within the Local IRM range, i.e., $\hat{w}^g_f \in \hat{W}^\ell$,  then LCP performs the normal optimization as described in Eq.~(\ref{eq:llp_optimization}) for the local coverage behaviors.
+However, if $\hat{w}^g_f \notin \hat{W}^\ell$, LCP simply initiates high-fidelity control  based on the global-level control $a^g$ in order to follow the guidance of GCP.
+
+
+
+% \subsubsection{4.3.1. Global Coverage Planner} \label{sssec:GCP}
+\subsubsection{Global Coverage Planner (GCP) Algorithm} \hfill
+% \phdone{GCP Functionality}
+% In our cascaded hierarchical optimization framework, we first solve for the global policy in Eq.~(\ref{eq:glp_optimization}).
+% As mentioned in Section~\ref{ssec:hierarchical_policy}, the outcome of the global policy is a parameter for the local policy.
+% This means that Global Coverage Planner (GCP) for Eq.~(\ref{eq:glp_optimization}) provides \textit{global guidance} to Local Coverage Planner (LCP) for Eq.~(\ref{eq:llp_optimization}).
+% The global guidance is for the coverage performance and completeness in a global sense, and especially helpful when there is no local area for LCP to cover.
+
+% \phdone{GCP Problem Characteristics--Large-scale}
+% There are special characteristics to note in global coverage planning. 
+% First, the environment size can be very large (> 1~km), so GCP should be able to reason over more than hundreds of nodes on the Global IRM.
+% %
+% %
+% \phdone{GCP Problem Characteristics--Frontiers as terminal nodes}
+% Second, as the role of GCP is to guide the robot to an uncovered area and let LCP lead the local coverage behavior, GCP's policy search can terminate at frontier nodes on the Global IRM.
+% %
+% %
+% \phdone{GCP Problem Approximation}
+% Note that the second characteristic can help to mitigate the challenge from the first characteristic.
+% By considering the frontier nodes as terminal nodes in the belief space, we can assume no changes to be made to the world coverage state before the termination, and thus, we can omit $W$ from the state space for GCP.
+% Then, we can utilize simple and efficient POMDP solvers for a long horizon planning.
+\noindent
+% \phdone{POMDP Solver for GCP}
 In this work, we adopt the QMDP approach for the global coverage planning \cite{littman1995learning}.
 The key idea of QMDP is to assume the state becomes fully observable after one step of action, so that the value function for further actions can be evaluated efficiently in an MDP (Markov Decision Process) setting.
-In our global coverage planning domain, we can consider the first step of action is for the robot to snap to one of the nearby node in Global IRM, and then, the robot pose is assumed to be fully observable, while the world occupancy and coverage states remain constant.
+In our global coverage planning domain, we define the first action to be the robot's relocation to a nearby node on the Global IRM, and then, the robot pose is assumed to be fully observable, while the world occupancy and coverage states remain unchanged.
 
 
 \phdone{QMDP Details}
 More formally, we solve for $Q^g_{\mathrm{MDP}}(s^g, a^g)$ by ignoring uncertainty in robot pose $q^g$ and the change of $\hat{W}^g_{cov}$, where $s^g \in N^g$ and $a^g$ is a control to move to a neighbor node $s'^g \in N^g$.
 In this MDP setting, $Q^g_{\mathrm{MDP}}(s^g, a^g)$ can be learned by Value Iteration very efficiently even for a long discount horizon.
 %
-Then, we can evaluate the Q-function in Eq.~(\ref{eq:q_function}) in a POMDP setting for the current belief and the feasible one-step actions, i.e.,
-$Q(b^g, a^g) = \int_{s^g} b(s^g) Q^g_{\mathrm{MDP}}(s^g, a^g) \mathrm{d}s^g$.
+Then, we can evaluate the \textit{action-value function} in Eq.~(\ref{eq:q_function}) in a POMDP setting for the current belief and the feasible one-step actions:
+\begin{align}
+  Q(b^g, a^g) = \int_{s^g} b(s^g) Q^g_{\mathrm{MDP}}(s^g, a^g) \mathrm{d}s^g.
+\end{align}
+% $Q(b^g, a^g) = \int_{s^g} b(s^g) Q^g_{\mathrm{MDP}}(s^g, a^g) \mathrm{d}s^g$.
 %
 Finally, a POMDP policy can be obtained as follows:
-$\pi^g(b^g) = \argmax_{a^g \in \mathbb{A}^g} Q(b^g, a^g)$.
+\begin{align}
+  \pi^g(b^g) = \argmax_{a^g \in \mathbb{A}^g} Q(b^g, a^g).
+\end{align}
+% $\pi^g(b^g) = \argmax_{a^g \in \mathbb{A}^g} Q(b^g, a^g)$.
 %
 An example of the GCP policy is depicted in Fig.~\ref{fig:graph-level-planner}.
 % [TODO] See Algorithm~\ref{alg:PLGRIM} for more details.
 
 
 
-%% MANUALLY NUMBERED!
-\subsubsection{4.3.2. Local Coverage Planner} \label{sssec:LCP}
-\phdone{LCP Functionality}
-In the hierarchical optimization framework, Local Coverage Planner (LCP) is who solves Eq.~(\ref{eq:llp_optimization}), given a parameter input from Global Coverage Planner (GCP).
-LCP constructs a high-fidelity policy by considering the information gathering (with visibility check given obstacles), traversal risk (based on proximity to obstacles, terrain roughness, and slopes), and robot's mobility constraints (such as acceleration limits and non-holonomic constraints of wheeled robots).
+% MANUALLY NUMBERED!
+% \subsubsection{4.3.2. Local Coverage Planner} \label{sssec:LCP}
+% \phdone{LCP Functionality}
+% In the hierarchical optimization framework, Local Coverage Planner (LCP) is who solves Eq.~(\ref{eq:llp_optimization}), given a parameter input from Global Coverage Planner (GCP).
+% LCP constructs a high-fidelity policy by considering the information gathering (with visibility check given obstacles), traversal risk (based on proximity to obstacles, terrain roughness, and slopes), and robot's mobility constraints (such as acceleration limits and non-holonomic constraints of wheeled robots).
 
 
-\phdone{LCP Problem Characteristics}
-% LCP has multiple operation modes based on the parameter input $\theta^\ell \in \Theta^\ell = \mathbb{A}^g$ from GCP,
-LCP has multiple operation modes based on the parameter input $\theta^\ell = a^g \in \mathbb{A}^g$ from GCP,
-where the target frontier node in Global IRM, $\hat{w}^g_f \in N^g$, can be extracted from the given global-level control $a^g$.
-%
-If $\hat{w}^g_f$ is within the Local IRM range, i.e., $\hat{w}^g_f \in \hat{W}^\ell$, then LCP performs the normal optimization as described in Eq.~(\ref{eq:llp_optimization}) for the local coverage behaviors.
-If $\hat{w}^g_f \notin \hat{W}^\ell$, LCP simply instantiates a high-fidelity control of the given global-level control $a^g$ to follow the guidance of GCP.
+% \phdone{LCP Problem Characteristics}
+% % LCP has multiple operation modes based on the parameter input $\theta^\ell \in \Theta^\ell = \mathbb{A}^g$ from GCP,
+% LCP has multiple operation modes based on the parameter input $\theta^\ell = a^g \in \mathbb{A}^g$ from GCP,
+% where the target frontier node in Global IRM, $\hat{w}^g_f \in N^g$, can be extracted from the given global-level control $a^g$.
+% %
+% If $\hat{w}^g_f$ is within the Local IRM range, i.e., $\hat{w}^g_f \in \hat{W}^\ell$, then LCP performs the normal optimization as described in Eq.~(\ref{eq:llp_optimization}) for the local coverage behaviors.
+% If $\hat{w}^g_f \notin \hat{W}^\ell$, LCP simply instantiates a high-fidelity control of the given global-level control $a^g$ to follow the guidance of GCP.
 
 
+\subsubsection{Local Coverage Planner (LCP) Algorithm} \hfill
 
-\phdone{POMDP Solver LCP}
-In order to solve Eq.~(\ref{eq:llp_optimization}) we employ POMCP (Partially Observable Monte Carlo Planning) algorithm \cite{silver2010monte}.
-POMCP is a widely-adopted POMDP solver that leverages the Monte Carlo sampling technique to alleviate both of the curse of dimensionality and history.
+\noindent
+% \phdone{POMDP Solver LCP}
+In order to solve Eq.~(\ref{eq:llp_optimization}), we employ POMCP (Partially Observable Monte Carlo Planning) algorithm \cite{silver2010monte}.
+POMCP is a widely-adopted POMDP solver that leverages the Monte Carlo sampling technique to alleviate both of the \textit{curse of dimensionality} and \textit{history}.
 Given a generative model (or a black box simulator) for discrete action and observation spaces, POMCP can learn the value function of near-optimally reachable belief space with adequate exploration-exploitation trade-off.
 
 
 \phdone{POMCP Details}
 More concretely, POMCP evaluates $Q^\ell(b^\ell, a^\ell)$ in Eq.~(\ref{eq:q_function}) by unrolling the recursive value backpropagation, with a set of sampled action-observation sequences.
 % [TODO] Provide a more concrete example with formulation.
-UCT algorithm for action selection helps to balance between exploration and exploitation to learn the Q-values.
-Initially it explored the search space (possible action-observation sequences) with a random or heuristically guided rollout policy.
-While incrementally building the belief tree it gradually exploits the learned values for more focused exploration with likely-optimal action-observation sequences (i.e., more focused exploration of the likely-reachable subspace by the optimal policy).
+UCT algorithm for action selection helps to balance between exploration and exploitation to learn the \textit{action-value function}.
+Initially, it explores the search space (possible action-observation sequences) with a random or a heuristically guided rollout policy.
+While incrementally building the belief tree, it gradually exploits the learned values for more focused exploration with likely-optimal action-observation sequences (i.e., more focused exploration of the likely-reachable subspace by the optimal policy).
 See illustration of local coverage planning in Fig.~\ref{fig:lattice-level-planner}.
 
 
@@ -1004,11 +1299,13 @@ See illustration of local coverage planning in Fig.~\ref{fig:lattice-level-plann
 
 \phdone{Consistency and Resiliency}
 We extend the receding-horizon \textit{local} cover planning problem
-in Eq.~(\ref{eq:llp_optimization}) to address the challenge between plan consistency and resiliency, described in Section~\ref{ssec:challenges}:
-\textit{consistency} over consecutive plans to avoid unnecessary rotations, slow-down, or back-and-forth motions,
-and \textit{resiliency} in a new plan in the presence of unforeseen hazard or anomalies.
-% Consistency is related to how conformable the beginning of the new policy is to the end of the previous policy, while resiliency is related to 
-In normal operations, consistency is preferred so that the robot can move effectively and make greater mission progress, while in abnormal situations, resiliency is required to ensure to the robot's safety and adapt to the unexpected changes.
+in Eq.~(\ref{eq:llp_optimization}) to address the challenge between plan consistency and resiliency, as described in Section~\ref{ssec:challenges}:
+\textit{Policy Concatenation}.
+
+% over consecutive plans to avoid unnecessary rotations, slow-down, or back-and-forth motions,
+% and \textit{resiliency} in a new plan in the presence of unforeseen hazard or anomalies.
+% % Consistency is related to how conformable the beginning of the new policy is to the end of the previous policy, while resiliency is related to 
+% In normal operations, consistency is preferred so that the robot can move effectively and make greater mission progress, while in abnormal situations, resiliency is required to ensure to the robot's safety and adapt to the unexpected changes.
 
 
 \phdone{Receding Horizon Planning Re-formulation}
@@ -1208,18 +1505,70 @@ PGLRIM outperforms over these environments as well, thanks to its dense local co
 \begin{figure*}[h!]
 \centering
     \begin{tikzpicture}
-	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=.75\textwidth]{figures/MLP_screenshot.png}};
-	\end{tikzpicture}		
+	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=1\textwidth]{figures/mlp_figure_scale.png}};
+	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+	    
+	    	% Annotations [Letters]
+	    	\node [above left,align=right,white] at (0.035,0.91) {A};
+	    	\node [above left,align=right,white] at (0.28,0.91) {B};
+	    	\node [above left,align=right,white] at (0.53,0.91) {C};
+	    	\node [above left,align=right,white] at (0.78,0.91) {D};
+	    
+	    	% Annotations [Time]
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.245,0.58) {5:08};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.495,0.58) {5:20};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.742,0.58) {5:24};
+	    	\node [font=\scriptsize,above left,align=right,white] at (.992,0.58) {6:24};
+	    	
+	    	% Annotations [Scale]
+	    	\node [font=\scriptsize,above left,align=right,black] at (0.044,0.045) {2 m};
+	    	\node [font=\scriptsize,above left,align=right,black] at (0.787,0.045) {2 m};
+
+	    \end{scope}
+	\end{tikzpicture}	
 \caption{LCP plans looping path that fully covers area represented by Local IRM (snapshot A). Path is updated to extend towards large uncovered swath while maintaining consistency with prior path. Risk map update reveals that path has entered a hazardous area---wall of lava tube (snapshot B). As a demonstration of LCP's resilience, path shifts away from hazardous area and robot is re-directed towards center of tube (snapshot C). One minute later, robot encounters fork in cave system. LCP path curves slightly toward fork apex before entering larger, less-risky channel (snapshot D). } \label{fig:mlp_hardware_tests} 
 \end{figure*}
+
+% \begin{figure*}[h!]
+% \centering
+%     \begin{tikzpicture}
+% 	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=.75\textwidth]{figures/MLP_screenshot.png}};
+% 	\end{tikzpicture}		
+% \caption{LCP plans looping path that fully covers area represented by Local IRM (snapshot A). Path is updated to extend towards large uncovered swath while maintaining consistency with prior path. Risk map update reveals that path has entered a hazardous area---wall of lava tube (snapshot B). As a demonstration of LCP's resilience, path shifts away from hazardous area and robot is re-directed towards center of tube (snapshot C). One minute later, robot encounters fork in cave system. LCP path curves slightly toward fork apex before entering larger, less-risky channel (snapshot D). } \label{fig:mlp_hardware_tests} 
+% \end{figure*}
+
 
 \begin{figure*}[h!]
 \centering
     \begin{tikzpicture}
-	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.75\textwidth]{figures/GLP_screenshot.png}};
+	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=1\textwidth]{figures/glp_figure_processed}};
+	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+	    
+	    	% Annotations [Letters]
+	    	\node [above left,align=right,white] at (0.035,0.91) {A};
+	    	\node [above left,align=right,white] at (0.28,0.91) {B};
+	    	\node [above left,align=right,white] at (0.53,0.91) {C};
+	    	\node [above left,align=right,white] at (0.78,0.91) {D};
+	    	
+	    	% Annotations [Time]
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.245,0.58) {09:11};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.495,0.58) {10:36};
+	    	\node [font=\scriptsize,above left,align=right,white] at (0.742,0.58) {12:26};
+	    	\node [font=\scriptsize,above left,align=right,white] at (.992,0.58) {14:16};
+	    	
+
+	    \end{scope}
 	\end{tikzpicture}	
 \caption{GCP plans path (blue) along Global IRM to frontier after local area is fully covered (snapshot A). Robot explores area around frontier (snapshot B), and then explores neighboring frontier at opening of side channel. LCP plans path (green) into channel (snapshot C). Later, after all local area has been explored, GCP guides robot back towards mouth of cave (snapshot D).} \label{fig:glp_hardware_tests} 
 \end{figure*}
+
+% \begin{figure*}[h!]
+% \centering
+%     \begin{tikzpicture}
+% 	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.75\textwidth]{figures/GLP_screenshot.png}};
+% 	\end{tikzpicture}	
+% \caption{GCP plans path (blue) along Global IRM to frontier after local area is fully covered (snapshot A). Robot explores area around frontier (snapshot B), and then explores neighboring frontier at opening of side channel. LCP plans path (green) into channel (snapshot C). Later, after all local area has been explored, GCP guides robot back towards mouth of cave (snapshot D).} \label{fig:glp_hardware_tests} 
+% \end{figure*}
 
 
 
@@ -1251,6 +1600,9 @@ Another interesting venue is the extension of this framework to the multi-robot 
 
 \section*{Acknowledgment}
 The work is partially supported by the Jet Propulsion Laboratory, California Institute of Technology, under a contract with the National Aeronautics and Space Administration (80NM0018D0004), and Defense Advanced Research Projects Agency (DARPA).
+We acknowledge Dr. Jennifer Blank at NASA Ames Research Center and
+the BRAILLE Mars Analog project funded by the NASA PSTAR program NNH16ZDA001N.
+We also acknowledge the Resource Staff at Lava Beds National Monument for support of our field efforts.
 
 
 
