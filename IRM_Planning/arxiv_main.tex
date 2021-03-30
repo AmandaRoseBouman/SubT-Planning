@@ -241,7 +241,7 @@
 In order for an autonomous robot to efficiently explore an unknown environment, it must account for uncertainty in sensor measurements, hazard assessment, localization, and motion execution.
 Making decisions for maximal reward in a stochastic setting requires learning values and constructing policies over a belief space, i.e., probability distribution over possible robot-world states.
 Value learning over belief spaces suffer from computational challenges, especially for long temporal horizons and large spatial environments for exploration. % \acomm{Why are spatial envs and long horizons high dimensional? (low priority addition)}
-At the same time, it should be adaptive and resilient to disturbances at run time in order to ensure the robot's safety, as required in many real-world applications.
+At the same time, it should be adaptive and resilient to disturbances at runtime in order to ensure the robot's safety, as required in many real-world applications.
 This work proposes a scalable value learning framework, PLGRIM (Probabilistic Local and Global Reasoning on Information roadMaps), that bridges the gap between \textit{(i)} local, risk-aware resiliency and \textit{(ii)} global, reward-seeking mission objectives.  
 Leveraging hierarchical belief space planners with information-rich graph structures, PLGRIM addresses large-scale exploration problems while providing locally near-optimal coverage plans. 
 PLGRIM is a step toward enabling belief space planners on physical robots operating in unknown and complex environments. 
@@ -396,10 +396,37 @@ where $\gamma \in (0, 1]$ is a discount factor for the future rewards, $\Pi_{0:\
 \subsection{Unknown Environment Coverage Problems}
 
 \phdone{Coverage Problem}
-For coverage planning problems, we define the state $s$ as a pair consisting of the robot $q$ and world state $W$, i.e., $s = (q, W)$.
-We further decompose the world state as $W = (W_{occ}, W_{cov})$, where $W_{occ}$ and $W_{cov}$ describe the occupancy and the coverage states of the world, respectively.
+For our coverage planning problem, we define the state $s$ as a pair consisting of the robot state $q$ and world state $W$, i.e., $s = (q, W)$.
+% We maintain two representations of the world state: $W = (W_{r}, W_{c})$, where $W_{r}$ and $W_{c}$ describe the risk and the coverage states of the world, respectively.
+We maintain two representations of the world: the world risk state $W_{r}$ and the world coverage state $W_{c}$, resulting in the combined world state $W = (W_{r}, W_{c})$.
+% where $W_{r}$ and $W_{c}$ describe the risk and the coverage states of the world, respectively.
 
-The occupancy state $W_{occ}$ provides an assessment of traversal risk over the world, while the coverage state $W_{cov}$ provides an estimation of what parts of the world have been \textit{observed} by a particular sensor. The occupancy and coverage states inform the action cost $C$ and information gain $I$, respectively, and form the basis of the coverage reward function:
+
+% maintain two representations of the world
+% occupancy --> risk world state
+
+% For coverage planning problems, we define the state $s$ as a pair consisting of the robot $q$ and world state $W$, i.e., $s = (q, W)$.
+% We further decompose the world state as $W = (W_{occ}, W_{cov})$, where $W_{occ}$ and $W_{cov}$ describe the occupancy and the coverage states of the world, respectively.
+% maintain two representations of the world
+% occupancy --> risk world state
+
+% \ph{Risk World} The risk world state $W_{r}$ encodes the traversability risk over the world. Fig. ?? illsustrates an exmaple ... where black colors demonte nontraversa areas such as large boulders, slopes, steps, or ... and white part reptesntats the surfaces that robot can traverse... and heatmap cpatures the full spectrum... $W_{r}$ is encoded on dense graph wiht quantized risk values (see Section ?? for details).
+
+The risk world state $W_{r}$ encodes the traversability risk over the world-- the stability of a robot as it negotiates slopes, rough terrain, low traction areas, narrow passages, et cetera. From this risk assessment encoding, the trajectory (i.e. path length and probability of failure) associated with a motion control can be measured and converted to an action cost.  
+
+% A dense risk map \textit{Riskmap} (see Fig.~\ref{fig:IRMs}) pr
+% Fig. ?? colored by risk value 
+% illsustrates an exmaple ... where black colors demonte nontraversa areas such as large boulders, slopes, steps, or ... and white part reptesntats the surfaces that robot can traverse... and heatmap cpatures the full spectrum... $W_{r}$ is encoded on dense graph wiht quantized risk values (see Section ?? for details).
+% \ph{Coverage Map} 
+The coverage world state $W_{c}$ provides an estimation of what parts of the world have been \textit{observed} by a particular sensor. Unobserved world elements, within the sensor field-of-view, are mapped to observed world elements. This mapping is analogous to an accumulation of information by the robot about its world. 
+% sensor measurements gathered along the path taken by the robot. 
+% new sensor The robot \textit{gains information} as it accumulates new sensor measurements of the world. 
+% Given a known environment represented by an abstract graph structure $W = (V, E)$, with free and occupied nodes $V_{free}\cup V_{occ} = V$, the traditional coverage problem aims to find a sequence of nodes and edge traversals that pass through all free nodes $V_{free} \subseteq V$. 
+% By incorporating a sensor field-of-view $F:V\rightarrow \mathcal{P}(V)$, which maps each node to a subset of "viewable" nodes, and adding the objective of minimizing travel distance, the coverage problem can be seen as a generalization of the traveling salesman problem -- the \emph{covering salesman problem} (CSP).  In the CSP, the objective is to determine the minimum length path through a subset of nodes $\{v_i\}_i \subseteq V_{free}$ such that every free node is within the accumulated sensor field-of-view: $V_{free} \subseteq \cup_i F(v_i)$.
+
+% \ph{Action Reward} 
+The coverage planning objective is to determine a trajectory through an environment that maximizes information gain $I$ while simultaneously minimizing action cost $C$. As such, the risk and coverage states form the basis of the coverage reward function :
+% The occupancy and coverage states inform the action cost $C$ and information gain $I$, respectively, and form the basis of the coverage reward function:
 % A reward function for coverage can be defined as a function of information gain $I$ and action cost $C$ as follows:
 \begin{align}
   % R(s, a) = f(I(z(s, a), W_{cov}),\; C(q, a, W_{occ})),
@@ -415,7 +442,7 @@ where $I(W_{cov}, a) = H(W_{cov}) - H(W_{cov} \,|\, a)$ is quantified as reducti
 % More detailed definitions are presented in Section~\ref{sec:plgrim} [TODO: ref to subsection].
 
 \phdone{Receding Horizon Planning}
-Note that in unknown space coverage domains, we do not have strong priors about the parts of the world we have not observed. Hence, knowledge about $W_{cov}$ and $W_{occ}$ in Eq.~(\ref{eq:coverage_reward}) at run time is incomplete and often inaccurate.
+Note that in unknown space coverage domains, we do not have strong priors about the parts of the world we have not observed. Hence, knowledge about $W_{cov}$ and $W_{occ}$ in Eq.~(\ref{eq:coverage_reward}) at runtime is incomplete and often inaccurate.
 % By plugging Eq.~(\ref{eq:coverage_reward}) into Eq.~(\ref{eq:objective_function}), we can formulate the coverage planning problem with an infinite planning horizon in a POMDP setting.
 % Then we can identify several fundamental challenges to solve this problem.
 %
@@ -430,7 +457,7 @@ In POMDP formulation with RHP, the objective function in Eq.~(\ref{eq:objective_
   \label{eq:receding_objective_function}
 \end{align}
 where $T$ is a finite planning horizon for a planning episode at time $t$.
-Given the policy for the last planning episode, only a part of the optimal policy, $\pi^*_{t:t+\Delta t}$ for $\Delta t \in (0, T]$, will be executed at run time. A new planning episode will start at time $t+\Delta t$ with updated $W_{cov}$ and $W_{occ}$.
+Given the policy for the last planning episode, only a part of the optimal policy, $\pi^*_{t:t+\Delta t}$ for $\Delta t \in (0, T]$, will be executed at runtime. A new planning episode will start at time $t+\Delta t$ with updated $W_{cov}$ and $W_{occ}$.
 
 
 
@@ -458,10 +485,11 @@ Given the policy for the last planning episode, only a part of the optimal polic
 %  The agent must understand how its actions affect the coverage belief state. 
    
 We detail the challenges associated with solving the coverage planning problem, Eq.~(\ref{eq:receding_objective_function}), in an unknown, large ($>\!\!1$~km), and rugged-terrain environment over long-time scales ($>\!\!1$~hour). % using a POMDP-RHP formulation.
-We broadly identify these challenges as computational complexity---in both space and time---and safety-critical policy reconciliation.
+% We broadly identify these challenges as computational complexity---in both space and time---and safety-critical policy reconciliation.
+% We broadly identify these challenges as computational complexity---in both space and time---for each planning episode and receding-horizon policy reconciliation over consecutive planning episodes.
+We broadly identify these challenges as computational complexity---in both space and time---for each planning episode, and
+conflicting policy objectives over consecutive planning episodes with a chance of unexpected updates in beliefs at runtime.
 
-
-%% DRAFT
 
 % \vspace{-2.5pt}
 \subsubsection{Space Complexity:} \hfill
@@ -469,31 +497,42 @@ We broadly identify these challenges as computational complexity---in both space
 
 \noindent
 In unknown environment exploration problems, the POMDP solver's space complexity is dominated by the world state representation.
-Recall that we defined the state $s$ for POMDP formulation as $s = (q, W)$ since the world is only partially observable and its coverage state changes as the agent continues exploration.
-Primary factors affecting this complexity are the environment size, spatial resolution, number of state variables, and the fidelity of the values assigned to these variables (e.g., Boolean vs. floating-point). Hence, the solver's space complexity is $\mathcal{O}(|n|^k)$ at least, where $n$ is the number of world's spatial elements and $k$ is the number of state variables to describe each element.
-As a concrete example, a naive grid structure requires 4 MB of memory to represent a single snapshot of 1~km environment if each grid cell stores occupancy and coverage states as floating-point variables, respectively.
-Considering a POMDP solver typically needs a large number of states to be maintained 
-an impractical allocation for an onboard system.
-% Thus, as was the case with time complexity, an agent's onboard computational resources upper bound the planner's space complexity, particularly relating to the world state representation.
+Recall that a state $s = (q, W)$ for coverage problems includes $W$ in it since the world is only partially observable and its coverage state changes as the agent continues exploration.
+Primary factors affecting this complexity are the environment size, spatial resolution, number of state variables, and the fidelity of the values assigned to these variables (e.g., Boolean vs. floating-point).
+In other words, the space complexity for representing a state is $\mathcal{O}(|n|^k)$, where $n$ is the number of world's spatial elements and $k$ is the number of state variables to describe each element.
+As a concrete example, a naive grid structure with 1~m resolution requires 8~MB of memory to represent a single snapshot of 1$\times$1~km environment if each grid cell stores occupancy and coverage states as floating-point variables, respectively.
+Considering a POMDP solver typically needs a large number of states to be hold in memory while planning, this space complexity imposes a great challenge, especially to onboard computing systems.
 
 % \vspace{-2.5pt}
 \subsubsection{Time Complexity:} \hfill
 \vspace{-0.25pt}
 
 \noindent
-POMDP planning suffers from \textit{curse of dimensionality} \cite{KLC98} and \textit{curse of history} \cite{Pineau03}. The former difficulty refers to the fact that "dimensionality" of the belief space is equal to "cardinality" (size) of the underlying state space. %, and the the computational complexity of a belief update is quadratic in the size of the state space: $\mathcal{O}(|\mathbb{S}|^2)$. 
-The latter difficulty refers to the fact that the computational complexity of evaluating possible action-observation combinations grows exponentially in planning depth $d$, $\mathcal{O}(|\mathbb{A}|^d|O|^d)$. Together, both \textit{curses} result in a POMDP planning complexity of $\mathcal{O}((|\mathbb{A}||O|)^d|\mathbb{S}|^2)$. Hence, a crudely defined belief- and action-space approximations can likely result in a very long planning time, untenable for a real-time system that must react quickly to new sensor information. An agent's onboard computational resources upper bound the planner's computational complexity.
-% As a concrete example, finding the coverage path spanning $1~hr$ through a $1 km$ environment with precise motions that can negotiate rugged terrain ($1~m$ actions into the $8$ direction combined cardinal and intercardinal directions), and an observation space spanning the environment containing both the world coverage an occupancy state ($1000^2$), the time complexity is $\mathcal{O}((|8||1000^2|)^{1000})$ (probably wrong), assuming no belief update.
+POMDP planning suffers from \textit{curse of dimensionality} \cite{KLC98} and \textit{curse of history} \cite{Pineau03}.
+The former difficulty is sourced in the fact that the state space grows exponentially with the number of state variables, and the the time complexity of a belief update is quadratic in the size of the state space; $\mathcal{O}(|\mathbb{S}|^2)$.
+The latter difficulty refers to the fact that the time complexity of evaluating possible action-observation combinations grows exponentially with planning depth $d$; $\mathcal{O}(|\mathbb{A}|^d|\mathbb{Z}|^d)$.
+Together, the above two \textit{curses} result in a POMDP planning complexity of $\mathcal{O}(|\mathbb{A}|^d|\mathbb{Z}|^d|\mathbb{S}|^2)$.
+In a large-scale exploration example for 1~km-long environment with 1~m traverse by the agent per action, the planning depth $d$ should be at least $10^3$ to reason about the coverage plan across the environment.
+Hence, this time complexity makes it computationally intractable to find a solution without adequate approximation and effective policy search algorithms.
 
-% \subsubsection{Policy Concatenation} \hfill
 % \vspace{-2.5pt}
-\subsubsection{Policy Reconciliation:} \hfill
+% \subsubsection{Policy Concatenation} \hfill
+% \subsubsection{Policy Reconciliation:} \hfill
+\subsubsection{Unexpected Belief Updates:} \hfill
+% \subsubsection{Unexpected Updates in Beliefs:} \hfill
 \vspace{-0.25pt}
 
 \noindent
-As the agent explores its environment, it receives new sensor information and updates its plan accordingly in a receding horizon fashion. %This continuous acquisition of new information, in conjunction with the computational constraints imposed by a real-time system, means that the agent can only construct a finite horizon optimal policy during a single planning episode. 
-Policies generated during consecutive planning episodes must respect the dynamic constraints of the robot (consistency), while simultaneously adapting to unexpected hazards in the environment (resiliency). Plan consistency and resiliency are often in opposition. Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, it is vital to find a balance between plan consistency and resiliency, particularly for safety-critical systems.
-%operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
+As the agent explores its environment, it receives new sensor information, updates its belief, and constructs a new coverage policy in a receding horizon fashion.
+Concerning a physical system in the real world, policies generated during consecutive planning episodes must respect the kinodynamic constraints of the robot, while simultaneously adapting to unexpected hazards in the environment.
+We refer to these two distinct and often opposed objectives as \textit{consistency} and \textit{resiliency} of the receding-horizon policies, respectively.
+Consistency between consecutive policies is preferred whenever possible so that the robotic system does not need to make abrupt maneuvers such as changing the direction or speed of the motion.
+However, if there are unexpected changes in the local area around the robot, it needs to make changes in its motion through resilient and adaptive policy to avoid a collision.
+Thus, it is imperative to find a balance between policy consistency and resiliency, particularly for safety-critical systems.
+% Plan consistency and resiliency are often in opposition.
+% Unexpected changes in the local world representation, due to sensor data delays or map prediction errors, may require aggressive maneuvers to avoid a collision. However, if the maneuver violates a robot's motion constraints (e.g., minimum turning radius), then the robot may destabilize and become inoperable. Thus, it is vital to find a balance between plan consistency and resiliency, particularly for safety-critical systems.
+% %operating in natural disaster areas, is vital so that a coverage mission does not end prematurely due to physical robot failure. 
+
 
 
 
@@ -628,7 +667,7 @@ Policies generated during consecutive planning episodes must respect the dynamic
 \label{sec:plgrim}
 
 \phdone{Framework Overview}
-In this section, we present a novel and field-hardened coverage planning autonomy framework, \textit{PLGRIM (Probabilistic Local and Global Reasoning on Information roadMaps)}, for exploration of large-scale unknown environments with complex terrain.
+In this section, we present a novel and field-hardened coverage planning autonomy framework, \textit{PLGRIM (Probabilistic Local and Global Reasoning on Information roadMaps)}, for exploration of large-scale unknown environments with complex terrains.
 % Our key ideas to tackle the challenges described in Section~\ref{ssec:challenges} are as follows:
 Our proposed methods to tackle the challenges described in Section~\ref{ssec:challenges} are:
 % To handle the \textit{Planner Horizon vs. Resolution} tradeoff:
@@ -639,13 +678,16 @@ Our proposed methods to tackle the challenges described in Section~\ref{ssec:cha
   \itemsep0em 
   \setlength{\itemsep}{0pt}
   \setlength{\parskip}{0pt}
-  \item \label{en:idea1} We introduce a hierarchical belief space representation that is compact and versatile. We refer to this representation as the Information RoadMap, or IRM. 
-  \item \label{en:idea2} At each hierarchical level, we propose use of an efficient POMDP solver that reasons over long temporal horizons within a suitable replanning time. Higher-level policies inform lower-level policies, resulting in a cascaded decision process.
+  \item \label{en:idea1} We introduce a hierarchical belief space representation that is compact, versatile, and scalable. We refer to this representation as the Information RoadMap, or IRM. 
+%   \item \label{en:idea2} At each hierarchical level, we propose use of an efficient POMDP solver that reasons over long temporal horizons within a suitable replanning time. Higher-level policies inform lower-level policies, resulting in a cascaded decision process.
+  \item \label{en:idea2} We propose hierarchical POMDP solvers that reason over long horizons within a suitable replanning time. Higher-level policies inform lower-level policies, resulting in a cascaded decision process.
 %   \begin{enumerate}[label={\alph*)}]
 %     \item \label{en:idea2} At each hierarchical level, we introduce a world belief representation that is compact and versatile. We refer to this representation as the Information RoadMap, or IRM.
 %     \item \label{en:idea3} We propose use of efficient POMDP solvers at each hierarchical level to reason over a longer temporal horizon within the given replanning time. 
 %   \end{enumerate}
-  \item \label{en:idea4} We introduce a safety-critical Receding Horizon Planning (RHP) scheme that is resilient to sudden belief updates.    
+%   \item \label{en:idea4} We introduce a safety-critical Receding Horizon Planning (RHP) scheme that is resilient to sudden belief updates.    
+  \item \label{en:idea4} We introduce receding-horizon policy reconciliation 
+%   a Receding Horizon Planning (RHP) scheme that is resilient to sudden belief updates.    
 %   large-scale planning simultaneously tackle large-scale planning problem and high resolution local-scale problem
 %   We propose use of an efficient POMDP solver 
 %   We propose an efficient POMDP solver decomposition... decompose POMDP problem into ... 
@@ -927,7 +969,7 @@ We construct and maintain IRMs at two hierarchical levels: the \textit{Local IRM
 
 \noindent
 We denote the ground-truth world state by $W^*$. When exploring unknown environments, at any given time, the robot's knowledge is limited to a \textcolor{blue}{noise-susceptible} subset of the  world $\hat{W}\!\!\subseteq\! W^*$ that has been explored and observed \textcolor{blue}{(readers might get this confused with a "coverage observation")} by the robot so far.
-% In the unknown environment exploration domain, the ground-truth world state $W^*$ is not accessible at run time.
+% In the unknown environment exploration domain, the ground-truth world state $W^*$ is not accessible at runtime.
 % Instead, we only have access to a subset of the world, $\hat{W} \subseteq W^*$, that has been explored and observed by the robot so far.
 $\hat{W}$ has two distinct attributes, $\hat{W}_{occ}$ and $\hat{W}_{cov}$, that represent the occupancy and coverage states, respectively. The world state $\hat{W}$ can be partitioned into discrete areas: 
 \begin{align}
@@ -1157,7 +1199,7 @@ If $a \in \mathbb{A}$ is a motion from node $\hat{w}_i \in N$ to node $\hat{w}_j
 where the second term represents the expected future entropy of the world coverage state after execution of action $a$. 
 
 % Although the action cost function is instantiated at each hierarchical level according to the associated action set, it can be generically formulated as:
-Although the action cost function for each hierarchical level is dependent upon the IRM's particular action set $E$ (i.e., Local and Global IRMs have different action sets), it can be generically formulated as:
+Although the action cost function at each hierarchical level is dependent upon the IRM's particular action set $E$ (i.e., Local and Global IRMs have different action sets), it can be generically formulated as:
 % The action cost function is instantiated for the specific action set for each hierarchical level, but formulated in the same way. 
 % For example, if $a \in \mathbb{A}$ is a motion from node $\hat{w}_i \in N$ to node $\hat{w}_j \in N$ along edge $e_{ij} \in E$.
 % Let us omit the superscript $(\cdot)^\ell$ or $(\cdot)^g$ for notational brevity.
@@ -1229,7 +1271,7 @@ where $k_I$ and $k_C$ are constant weights.
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.085,0.265) {$(W_{2a},Q_{2a})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.085,0.20) {$(W_{3a},Q_{3a})$};
 	   % 	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.085,0.13) {$(W_{4a},Q_{4a})$};
-	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.0755,0.13) {$(W_{1},Q_{1})$};
+	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.0835,0.13) {$(W_{1},Q_{4a})$};
 	    	
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.33) {$(W_{1b},Q_{1b})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.265) {$(W_{2b},Q_{2b})$};
@@ -1237,7 +1279,7 @@ where $k_I$ and $k_C$ are constant weights.
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.13) {$(W_{4b},Q_{4b})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.067) {$(W_{5b},Q_{5b})$};
 	   % 	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.00) {$(W_{6b},Q_{6b})$};
-	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.16,0.00) {$(W_{1},Q_{1})$};
+	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.166,0.00) {$(W_{1},Q_{6b})$};
 	    	
 	    	% Annotations [Top]
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.26,0.49) {$(W_{1a},Q_{1a})$};
@@ -1248,14 +1290,14 @@ where $k_I$ and $k_C$ are constant weights.
 	    	
 	    	% Annotations [Bottom]
 	   % 	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.26,-0.01) {$(W_{4a},Q_{4a})$};
-	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.25,-0.01) {$(W_{1},Q_{1})$};
+	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.25,-0.01) {$(W_{1},Q_{4a})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.423,-0.01) {$(W_{3a},Q_{3a})$};
-	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.59,-0.01) {$(W_{1},Q_{1})$};
+	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.59,-0.01) {$(W_{1},Q_{6b})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.76,-0.01) {$(W_{5b},Q_{5b})$};
 	    	\node [font=\fontsize{4pt}{0}, above left,align=right,black] at (0.92,-0.01) {$(W_{4b},Q_{4b})$};
 	    \end{scope}
 	\end{tikzpicture}	
-  \caption{Illustrative example of coverage path planning on the Local IRM with Monte-Carlo Tree Search. Robot field-of-view is represented by blue circle. The state contains the coverage state of the environment, $W$, and the robot state, $Q$. Macro actions (6 steps on Local IRM) associated with two tree branches (paths \textit{A} and \textit{B}) are shown. Note that the final coverage world state in each branch are identical. Path \textit{A} is evaluated to be more rewarding than \textit{B} since fewer actions were required to cover the same area.}
+  \caption{Illustrative example of coverage path planning on the Local IRM with Monte-Carlo Tree Search. Robot field-of-view is represented by blue circle. The state contains the world coverage state, $W$, and the robot state, $Q$. Macro actions (6 steps on Local IRM) associated with two tree branches (paths \textit{A} and \textit{B}) are shown. Note that the final coverage world state in each branch are identical. Path \textit{A} is evaluated to be more rewarding than \textit{B} since fewer actions were required to cover the same area.}
   \label{fig:lattice-level-planner}
 \end{figure*}
 
@@ -1490,7 +1532,7 @@ See illustration of local coverage planning in Fig.~\ref{fig:lattice-level-plann
 
 \phdone{Consistency and Resiliency}
 We extend the receding-horizon \textit{local} coverage planning problem
-in Eq.~(\ref{eq:llp_optimization}) to address the challenge between plan consistency and resiliency, as described in Section~\ref{ssec:challenges}:
+in Eq.~(\ref{eq:llp_optimization}) to address the challenge between policy consistency and resiliency, as described in Section~\ref{ssec:challenges}:
 % \textit{Policy Concatenation}.
 \textit{Policy Reconciliation}.
 
@@ -1620,27 +1662,52 @@ The final receding horizon policy can be constructed by concatenating the previo
 % 	\label{fig:maps_of_cave}
 % \end{figure}
 
-\begin{figure}
-\centering
-    \begin{tikzpicture}
-	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=1\columnwidth]{IRM_Planning/figures/combined_gazebo_worlds_V13.png}};
-	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+% \begin{figure}
+% \centering
+%     \begin{tikzpicture}
+% 	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=1\columnwidth]{IRM_Planning/figures/combined_gazebo_worlds_V13.png}};
+% 	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
 	    
-	    	% Annotations [Letters]
-	    	\node [above left,align=right,black] at (0.07,0.915) {(a)};
-	    	\node [above left,align=right,black] at (0.07,0.52) {(b)};
-	    	\node [above left,align=right,black] at (0.87,0.915) {(c)};
+% 	    	% Annotations [Letters]
+% 	    	\node [above left,align=right,black] at (0.07,0.915) {(a)};
+% 	    	\node [above left,align=right,black] at (0.07,0.52) {(b)};
+% 	    	\node [above left,align=right,black] at (0.87,0.915) {(c)};
 	    	
-	    	% Annotations [Scale]
-	    	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.65) {XX m};
-	    	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.036) {XX m};
-	    	\node [font=\scriptsize,above left,align=right,black] at (0.89,0.036) {XX m};
+% 	    	% Annotations [Scale]
+% 	    	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.65) {XX m};
+% 	    	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.036) {XX m};
+% 	    	\node [font=\scriptsize,above left,align=right,black] at (0.89,0.036) {XX m};
 
-	    \end{scope}
-	\end{tikzpicture}	
-\caption{PLGRIM's performance was evaluated in various simulated environments: (a) subway station, (b) cave, and (c) maze.}
-\label{fig:maps_of_cave}
-\end{figure}
+% 	    \end{scope}
+% 	\end{tikzpicture}	
+% \caption{PLGRIM's performance was evaluated in various simulated environments: (a) subway station, (b) cave, and (c) maze.}
+% \label{fig:maps_of_cave}
+% \end{figure}
+
+% \begin{figure}[h!]
+% \centering
+%     \begin{tikzpicture}
+% 	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.85\columnwidth]{IRM_Planning/figures/stacked_sim_worlds.png}};
+% 	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+	    
+	    
+% 	    	% Annotations [Letters]
+% 	   % 	\node [above left,align=right,black] at (0.07,0.975) {(a)};
+%     	    \node [above left,align=right,black] at (0.35,0.975) {(a) Simulated Subway};
+% 	   % 	\node [above left,align=right,black] at (0.07,0.67) {(b)};
+%         	\node [above left,align=right,black] at (0.35,0.67) {(b) Simulated Maze};
+% 	    	\node [above left,align=right,black] at (0.35,0.35) {(c) Simulated Cave};
+	    	
+% 	    	% Annotations [Scale]
+% 	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.65) {XX m};
+% 	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.036) {XX m};
+% 	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.89,0.036) {XX m};
+
+% 	    \end{scope}
+% 	\end{tikzpicture}	
+% \caption{PLGRIM's performance was evaluated in various simulated environments: (a) subway station, (b) cave, and (c) maze.}
+% \label{fig:maps_of_cave}
+% \end{figure}
 
 % font=\fontsize{4pt}{0},
 
@@ -1675,12 +1742,12 @@ Note that in order to achieve reasonable performance in the complex simulated en
 
 \begin{figure*}[t!]
     \centering
-			\subfloat[][Simulated \\Subway 1x]{\includegraphics[height=0.5759\columnwidth]{figures/areacov_plots/subway1x.pdf}}
-			\subfloat[][Simulated \\Subway 2x]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/subway2x.pdf}}	
-			\subfloat[][Simulated \\Subway 3x]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/subway3x.pdf}}	
-      \subfloat[][Simulated \\Cave]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/comparison_simple_cave.pdf}}
+			\subfloat[][Simulated \\ \; \; \; Subway 1x]{\includegraphics[height=0.5759\columnwidth]{figures/areacov_plots/subway1x.pdf}}
+			\subfloat[][Simulated \\ \; \; \; Subway 2x]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/subway2x.pdf}}	
+			\subfloat[][Simulated \\ \; \; \; Subway 3x]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/subway3x.pdf}}	
+      \subfloat[][Simulated\\Cave]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/comparison_simple_cave.pdf}}
       \subfloat[][Simulated \\Maze]{\includegraphics[height=0.57015\columnwidth]{figures/areacov_plots/comparison_cave_cropped.pdf}}
-			\subfloat[][Real-world \\Lava Tube]{\includegraphics[height=0.5759\columnwidth,clip,trim={20px 0 0 0}]{figures/areacov_plots/lava_tube.pdf}}
+			\subfloat[][Real-world \\ \; \; Lava Tube]{\includegraphics[height=0.5759\columnwidth,clip,trim={20px 0 0 0}]{figures/areacov_plots/lava_tube.pdf}}
 			\caption{Exploration by PLGRIM and baseline methods in simulated subway environments of increasing size (a)-(c), and in simulated and real-world cave environments (d)-(f). For (d) and (e), the covered area is the average of two runs. Red dashed lines indicate 100\% coverage of the environments where applicable. The maximum speed limit of Au-Spot robot in (f) was set to 50\% of the original limit due to the extremely rough terrain conditions in the lave tube.}
     \label{fig:all_together_plot}
 \end{figure*}
@@ -1726,6 +1793,31 @@ Fig.~\ref{fig:all_together_plot}(d)-(f) show the coverage rate for the algorithm
 HFE performs well in the simulated cave environment which has relatively simple topology, but works poorly in the maze environment.
 The frontier-based exploration has sparse action space, which is intrinsically brittle especially in narrow passages or sharp corners.
 PGLRIM outperforms baseline methods in these environments, due to its hierarchical policy decomposition leading to a dense local coverage planning and large-scale global guidance.
+
+\begin{figure}[h!]
+\centering
+    \begin{tikzpicture}
+	    \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.85\columnwidth]{IRM_Planning/figures/stacked_sim_worlds.png}};
+	    \begin{scope}[x={(image.south east)},y={(image.north west)}]
+	    
+	    
+	    	% Annotations [Letters]
+	   % 	\node [above left,align=right,black] at (0.07,0.975) {(a)};
+    	    \node [above left,align=right,black] at (0.42,0.99) {(a) Simulated Subway};
+	   % 	\node [above left,align=right,black] at (0.07,0.67) {(b)};
+        	\node [above left,align=right,black] at (0.37,0.67) {(b) Simulated Maze};
+	    	\node [above left,align=right,black] at (0.37,0.33) {(c) Simulated Cave};
+	    	
+	    	% Annotations [Scale]
+	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.65) {XX m};
+	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.115,0.036) {XX m};
+	   % 	\node [font=\scriptsize,above left,align=right,black] at (0.89,0.036) {XX m};
+
+	    \end{scope}
+	\end{tikzpicture}	
+\caption{PLGRIM's performance was evaluated in various simulated environments: (a) subway station, (b) maze, and (c) cave.}
+\label{fig:maps_of_cave}
+\end{figure}
 
 \begin{figure*}[h!]
 \centering
@@ -1857,7 +1949,7 @@ We acknowledge our team members in Team CoSTAR for DARPA Subterranean Challenge,
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bibliographystyle{aaai21}
+% \bibliographystyle{aaai21}  % redundant
 \bibliography{references}  % .bib
 
 
